@@ -21,22 +21,36 @@ title: bigDashimi
     <div class="settings-overlay" id="settings-overlay">
         <div class="settings-panel">
             <div class="settings-header">
-                <h2>🚏 Stationen verwalten</h2>
+                <h2>⚙️ Einstellungen</h2>
                 <button class="btn-close" onclick="closeSettings()">✕</button>
             </div>
 
-            <div class="settings-add">
-                <input type="text" id="new-station-input" placeholder="Stationsname eingeben (z.B. Zürich, Paradeplatz)" onkeydown="if(event.key==='Enter') addStation()">
-                <button class="btn-add" onclick="addStation()">+ Hinzufügen</button>
+            <!-- Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')">🚏 Stationen</button>
+                <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')">🌤 Wetter</button>
             </div>
 
-            <div class="settings-station-list" id="station-list">
-                <!-- Wird dynamisch gefüllt -->
+            <!-- Tab: Stationen -->
+            <div id="tab-stations">
+                <div class="settings-add">
+                    <input type="text" id="new-station-input" placeholder="Stationsname eingeben (z.B. Zürich, Paradeplatz)" onkeydown="if(event.key==='Enter') addStation()">
+                    <button class="btn-add" onclick="addStation()">+ Hinzufügen</button>
+                </div>
+                <div class="settings-station-list" id="station-list"></div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetStations()">↺ Stationen zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+                </div>
             </div>
 
-            <div class="settings-footer">
-                <button class="btn-reset" onclick="resetStations()">↺ Zurücksetzen</button>
-                <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+            <!-- Tab: Wetter -->
+            <div id="tab-weather" style="display:none;">
+                <div id="weather-settings-content"></div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetWeather()">↺ Wetter zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+                </div>
             </div>
         </div>
     </div>
@@ -45,7 +59,8 @@ title: bigDashimi
     <div class="widget">
         <div class="widget-title">
             <span class="icon">🌤</span>
-            WETTER
+            WETTER — <span id="weather-city-display">Zürich</span>
+            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter-Standort ändern">⚙️</button>
         </div>
         <div id="weather-content">
             <div class="loading">Lade Wetter...</div>
@@ -83,7 +98,7 @@ title: bigDashimi
         </div>
         <div class="status-item">
             <span class="status-label">Wetter</span>
-            <span class="status-value">Zürich, CH</span>
+            <span class="status-value" id="weather-city-status">Zürich</span>
         </div>
     </div>
 

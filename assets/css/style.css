@@ -365,6 +365,60 @@ body {
     color: #fff;
 }
 
+/* Settings Tabs */
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid #2a2a4a;
+}
+
+.settings-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #666;
+    padding: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.settings-tab:hover {
+    color: #aaa;
+    background: #1a1a35;
+}
+
+.settings-tab.active {
+    color: #00d4ff;
+    border-bottom-color: #00d4ff;
+}
+
+/* Wetter Settings */
+.settings-weather-current {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 15px 20px;
+    background: #1a1a35;
+    margin: 10px 20px;
+    border-radius: 10px;
+}
+
+.settings-weather-city {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.weather-result {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.weather-result:hover {
+    background: #2a2a55 !important;
+}
+
 /* Add Station */
 .settings-add {
     display: flex;

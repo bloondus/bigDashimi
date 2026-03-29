@@ -1,52 +1,89 @@
 // ===== bigDashimi - Dashboard =====
 
-// ----- Standard-Stationen -----
+// ----- Standards -----
 const DEFAULT_STATIONS = [
     { name: 'Spital Zollikerberg', query: 'Zollikerberg, Spital' },
     { name: 'Einfangstrasse', query: 'Zürich, Einfangstrasse' },
     { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
 ];
 
+const DEFAULT_WEATHER = {
+    lat: 47.3769,
+    lon: 8.5417,
+    city: 'Zürich',
+};
+
 // ----- Konfiguration -----
 const CONFIG = {
-    // Wetter: Open-Meteo (GRATIS, kein API Key nötig!)
-    weatherLat: 47.3769,    // Zürich Breitengrad
-    weatherLon: 8.5417,     // Zürich Längengrad
-    weatherCity: 'Zürich',
+    // Wetter – aus localStorage oder Default
+    ...loadWeatherConfig(),
 
-    // ÖV Stationen – werden aus localStorage geladen
+    // ÖV Stationen – aus localStorage
     oevStations: loadStations(),
     oevLimit: 6,
 
-    // Update-Intervalle (in Millisekunden)
+    // Update-Intervalle
     clockInterval: 1000,
-    weatherInterval: 5 * 60 * 1000,   // 5 Minuten
-    oevInterval: 30 * 1000,            // 30 Sekunden
+    weatherInterval: 5 * 60 * 1000,
+    oevInterval: 30 * 1000,
 };
 
-// ----- Stationen: localStorage -----
+// ----- localStorage: Stationen -----
 function loadStations() {
     try {
         const saved = localStorage.getItem('bigdashimi-stations');
         if (saved) return JSON.parse(saved);
     } catch (e) { console.warn('Stations laden fehlgeschlagen', e); }
-    return DEFAULT_STATIONS;
+    return DEFAULT_STATIONS.map(s => ({...s}));
 }
 
 function saveStations() {
     localStorage.setItem('bigdashimi-stations', JSON.stringify(CONFIG.oevStations));
 }
 
+// ----- localStorage: Wetter -----
+function loadWeatherConfig() {
+    try {
+        const saved = localStorage.getItem('bigdashimi-weather');
+        if (saved) {
+            const w = JSON.parse(saved);
+            return { weatherLat: w.lat, weatherLon: w.lon, weatherCity: w.city };
+        }
+    } catch (e) { console.warn('Wetter-Config laden fehlgeschlagen', e); }
+    return { weatherLat: DEFAULT_WEATHER.lat, weatherLon: DEFAULT_WEATHER.lon, weatherCity: DEFAULT_WEATHER.city };
+}
+
+function saveWeatherConfig() {
+    localStorage.setItem('bigdashimi-weather', JSON.stringify({
+        lat: CONFIG.weatherLat,
+        lon: CONFIG.weatherLon,
+        city: CONFIG.weatherCity,
+    }));
+}
+
 // ----- Settings Panel -----
+let activeTab = 'stations';
+
 function openSettings() {
     document.getElementById('settings-overlay').classList.add('active');
-    renderStationList();
+    switchTab('stations');
 }
 
 function closeSettings() {
     document.getElementById('settings-overlay').classList.remove('active');
 }
 
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.settings-tab[data-tab="${tab}"]`).classList.add('active');
+    document.getElementById('tab-stations').style.display = tab === 'stations' ? 'block' : 'none';
+    document.getElementById('tab-weather').style.display = tab === 'weather' ? 'block' : 'none';
+    if (tab === 'stations') renderStationList();
+    if (tab === 'weather') renderWeatherSettings();
+}
+
+// -- Stationen Tab --
 function renderStationList() {
     const list = document.getElementById('station-list');
     if (CONFIG.oevStations.length === 0) {
@@ -73,7 +110,6 @@ function addStation() {
     const input = document.getElementById('new-station-input');
     const val = input.value.trim();
     if (!val) return;
-
     CONFIG.oevStations.push({ name: val, query: val });
     saveStations();
     input.value = '';
@@ -103,15 +139,94 @@ function resetStations() {
     renderStationList();
 }
 
-function applySettings() {
-    closeSettings();
-    updateDepartures();
-    updateStationCount();
-}
-
 function updateStationCount() {
     const countEl = document.getElementById('station-count');
     if (countEl) countEl.textContent = `${CONFIG.oevStations.length} Haltestelle${CONFIG.oevStations.length !== 1 ? 'n' : ''}`;
+}
+
+// -- Wetter Tab --
+function renderWeatherSettings() {
+    const container = document.getElementById('weather-settings-content');
+    container.innerHTML = `
+        <div class="settings-weather-current">
+            <span class="settings-station-name">📍 Aktueller Standort</span>
+            <span class="settings-weather-city">${CONFIG.weatherCity}</span>
+            <span class="settings-station-query">${CONFIG.weatherLat.toFixed(4)}, ${CONFIG.weatherLon.toFixed(4)}</span>
+        </div>
+        <div class="settings-add">
+            <input type="text" id="weather-city-input" placeholder="Stadt eingeben (z.B. Bern, Basel, Wien...)" onkeydown="if(event.key==='Enter') searchWeatherCity()">
+            <button class="btn-add" onclick="searchWeatherCity()">🔍 Suchen</button>
+        </div>
+        <div id="weather-search-results"></div>
+    `;
+}
+
+async function searchWeatherCity() {
+    const input = document.getElementById('weather-city-input');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const resultsEl = document.getElementById('weather-search-results');
+    resultsEl.innerHTML = '<div class="loading">Suche...</div>';
+
+    try {
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=de`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+            resultsEl.innerHTML = '<div class="error">⚠ Keine Stadt gefunden</div>';
+            return;
+        }
+
+        resultsEl.innerHTML = data.results.map((r, i) => `
+            <div class="settings-station-item weather-result" onclick="selectWeatherCity(${i})">
+                <div class="settings-station-info">
+                    <span class="settings-station-name">🏙 ${r.name}</span>
+                    <span class="settings-station-query">${r.admin1 || ''} ${r.country || ''} • ${r.latitude.toFixed(2)}, ${r.longitude.toFixed(2)}</span>
+                </div>
+            </div>
+        `).join('');
+
+        // Ergebnisse global speichern für selectWeatherCity
+        window._weatherResults = data.results;
+    } catch (err) {
+        resultsEl.innerHTML = '<div class="error">⚠ Suche fehlgeschlagen</div>';
+    }
+}
+
+function selectWeatherCity(index) {
+    const r = window._weatherResults[index];
+    CONFIG.weatherLat = r.latitude;
+    CONFIG.weatherLon = r.longitude;
+    CONFIG.weatherCity = r.name;
+    saveWeatherConfig();
+    renderWeatherSettings();
+    updateWeatherCityDisplay();
+}
+
+function resetWeather() {
+    CONFIG.weatherLat = DEFAULT_WEATHER.lat;
+    CONFIG.weatherLon = DEFAULT_WEATHER.lon;
+    CONFIG.weatherCity = DEFAULT_WEATHER.city;
+    saveWeatherConfig();
+    renderWeatherSettings();
+    updateWeatherCityDisplay();
+}
+
+function updateWeatherCityDisplay() {
+    const el = document.getElementById('weather-city-display');
+    if (el) el.textContent = CONFIG.weatherCity;
+    const statusEl = document.getElementById('weather-city-status');
+    if (statusEl) statusEl.textContent = CONFIG.weatherCity;
+}
+
+function applySettings() {
+    closeSettings();
+    updateDepartures();
+    updateWeather();
+    updateStationCount();
+    updateWeatherCityDisplay();
 }
 
 // ----- Uhrzeit & Datum -----
@@ -304,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateWeather();
     updateDepartures();
     updateStatus();
+    updateWeatherCityDisplay();
+    updateStationCount();
 
     // Intervalle setzen
     setInterval(updateClock, CONFIG.clockInterval);
