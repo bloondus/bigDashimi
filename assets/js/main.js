@@ -1,5 +1,12 @@
 // ===== bigDashimi - Dashboard =====
 
+// ----- Standard-Stationen -----
+const DEFAULT_STATIONS = [
+    { name: 'Spital Zollikerberg', query: 'Zollikerberg, Spital' },
+    { name: 'Einfangstrasse', query: 'Zürich, Einfangstrasse' },
+    { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
+];
+
 // ----- Konfiguration -----
 const CONFIG = {
     // Wetter: Open-Meteo (GRATIS, kein API Key nötig!)
@@ -7,12 +14,8 @@ const CONFIG = {
     weatherLon: 8.5417,     // Zürich Längengrad
     weatherCity: 'Zürich',
 
-    // ÖV Stationen (transport.opendata.ch - Schweizer ÖV)
-    oevStations: [
-        { name: 'Spital Zollikerberg', query: 'Zollikerberg, Spital' },
-        { name: 'Einfangstrasse', query: 'Zürich, Einfangstrasse' },
-        { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
-    ],
+    // ÖV Stationen – werden aus localStorage geladen
+    oevStations: loadStations(),
     oevLimit: 6,
 
     // Update-Intervalle (in Millisekunden)
@@ -20,6 +23,96 @@ const CONFIG = {
     weatherInterval: 5 * 60 * 1000,   // 5 Minuten
     oevInterval: 30 * 1000,            // 30 Sekunden
 };
+
+// ----- Stationen: localStorage -----
+function loadStations() {
+    try {
+        const saved = localStorage.getItem('bigdashimi-stations');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { console.warn('Stations laden fehlgeschlagen', e); }
+    return DEFAULT_STATIONS;
+}
+
+function saveStations() {
+    localStorage.setItem('bigdashimi-stations', JSON.stringify(CONFIG.oevStations));
+}
+
+// ----- Settings Panel -----
+function openSettings() {
+    document.getElementById('settings-overlay').classList.add('active');
+    renderStationList();
+}
+
+function closeSettings() {
+    document.getElementById('settings-overlay').classList.remove('active');
+}
+
+function renderStationList() {
+    const list = document.getElementById('station-list');
+    if (CONFIG.oevStations.length === 0) {
+        list.innerHTML = '<div class="loading">Keine Stationen konfiguriert</div>';
+        return;
+    }
+    list.innerHTML = CONFIG.oevStations.map((s, i) => `
+        <div class="settings-station-item">
+            <div class="settings-station-info">
+                <span class="settings-station-name">🚏 ${s.name}</span>
+                <span class="settings-station-query">${s.query}</span>
+            </div>
+            <div class="settings-station-actions">
+                <button class="btn-move" onclick="moveStation(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Nach oben">▲</button>
+                <button class="btn-move" onclick="moveStation(${i}, 1)" ${i === CONFIG.oevStations.length - 1 ? 'disabled' : ''} title="Nach unten">▼</button>
+                <button class="btn-delete" onclick="removeStation(${i})" title="Entfernen">✕</button>
+            </div>
+        </div>
+    `).join('');
+    updateStationCount();
+}
+
+function addStation() {
+    const input = document.getElementById('new-station-input');
+    const val = input.value.trim();
+    if (!val) return;
+
+    CONFIG.oevStations.push({ name: val, query: val });
+    saveStations();
+    input.value = '';
+    renderStationList();
+}
+
+function removeStation(index) {
+    CONFIG.oevStations.splice(index, 1);
+    saveStations();
+    renderStationList();
+}
+
+function moveStation(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= CONFIG.oevStations.length) return;
+    const temp = CONFIG.oevStations[index];
+    CONFIG.oevStations[index] = CONFIG.oevStations[newIndex];
+    CONFIG.oevStations[newIndex] = temp;
+    saveStations();
+    renderStationList();
+}
+
+function resetStations() {
+    CONFIG.oevStations.length = 0;
+    DEFAULT_STATIONS.forEach(s => CONFIG.oevStations.push({...s}));
+    saveStations();
+    renderStationList();
+}
+
+function applySettings() {
+    closeSettings();
+    updateDepartures();
+    updateStationCount();
+}
+
+function updateStationCount() {
+    const countEl = document.getElementById('station-count');
+    if (countEl) countEl.textContent = `${CONFIG.oevStations.length} Haltestelle${CONFIG.oevStations.length !== 1 ? 'n' : ''}`;
+}
 
 // ----- Uhrzeit & Datum -----
 function updateClock() {

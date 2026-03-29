@@ -10,9 +10,34 @@ title: bigDashimi
         <div class="widget-title">
             <span class="icon">🚉</span>
             ÖV ABFAHRTEN
+            <button class="btn-settings" onclick="openSettings()" title="Stationen bearbeiten">⚙️</button>
         </div>
         <div class="departure-list" id="departures-list">
-            <div class="loading">Lade Abfahrten für 3 Stationen...</div>
+            <div class="loading">Lade Abfahrten...</div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2>🚏 Stationen verwalten</h2>
+                <button class="btn-close" onclick="closeSettings()">✕</button>
+            </div>
+
+            <div class="settings-add">
+                <input type="text" id="new-station-input" placeholder="Stationsname eingeben (z.B. Zürich, Paradeplatz)" onkeydown="if(event.key==='Enter') addStation()">
+                <button class="btn-add" onclick="addStation()">+ Hinzufügen</button>
+            </div>
+
+            <div class="settings-station-list" id="station-list">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetStations()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+            </div>
         </div>
     </div>
 
@@ -54,7 +79,7 @@ title: bigDashimi
         </div>
         <div class="status-item">
             <span class="status-label">ÖV Stationen</span>
-            <span class="status-value">3 Haltestellen</span>
+            <span class="status-value" id="station-count">3 Haltestellen</span>
         </div>
         <div class="status-item">
             <span class="status-label">Wetter</span>
@@ -70,8 +95,8 @@ title: bigDashimi
         </div>
         <div style="color:#888; font-size:0.85rem; line-height:1.8;">
             <p><strong style="color:#ccc">bigDashimi</strong> — Dein persönliches Dashboard</p>
-            <p style="margin-top:10px">✏️ Station ändern: <code style="color:#00d4ff">assets/js/main.js</code></p>
-            <p>🌤 Wetter: <span style="color:#00ff88">Open-Meteo (gratis, kein Key!)</span></p>
+            <p style="margin-top:10px">⚙️ Stationen bearbeiten: <strong style="color:#00d4ff">Zahnrad-Button ⚙️</strong> im ÖV Widget</p>
+            <p>🌤 Wetter: <span style="color:#00ff88">Open-Meteo (gratis)</span></p>
             <p>🚉 ÖV: <span style="color:#00ff88">transport.opendata.ch</span></p>
             <p>📺 Fullscreen: <kbd style="background:#2a2a4a;padding:2px 6px;border-radius:3px">F11</kbd></p>
         </div>
