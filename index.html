@@ -1,0 +1,79 @@
+---
+layout: default
+title: bigDashimi
+---
+
+<div class="dashboard-grid">
+
+    <!-- ÖV Abfahrten (groß, links) -->
+    <div class="widget widget-oev">
+        <div class="widget-title">
+            <span class="icon">🚉</span>
+            ÖV ABFAHRTEN — <span id="station-name">{{ site.title }}</span>
+        </div>
+        <div class="departure-list" id="departures-list">
+            <div class="loading">Lade Abfahrten...</div>
+        </div>
+    </div>
+
+    <!-- Wetter -->
+    <div class="widget">
+        <div class="widget-title">
+            <span class="icon">🌤</span>
+            WETTER
+        </div>
+        <div id="weather-content">
+            <div class="loading">Lade Wetter...</div>
+        </div>
+    </div>
+
+    <!-- Kalender / Datum -->
+    <div class="widget">
+        <div class="widget-title">
+            <span class="icon">📅</span>
+            DATUM
+        </div>
+        <div class="date-big" id="date-day">--</div>
+        <div class="date-month" id="date-month"></div>
+        <div class="date-weekday" id="date-weekday"></div>
+    </div>
+
+    <!-- Status -->
+    <div class="widget">
+        <div class="widget-title">
+            <span class="icon">⚡</span>
+            STATUS
+        </div>
+        <div class="status-item">
+            <span class="status-label"><span class="status-dot"></span>Dashboard</span>
+            <span class="status-value">Online</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Letztes Update</span>
+            <span class="status-value" id="last-update">--:--</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">ÖV Station</span>
+            <span class="status-value">Zürich HB</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Wetter</span>
+            <span class="status-value">Zürich, CH</span>
+        </div>
+    </div>
+
+    <!-- Info Widget -->
+    <div class="widget">
+        <div class="widget-title">
+            <span class="icon">ℹ️</span>
+            INFO
+        </div>
+        <div style="color:#888; font-size:0.85rem; line-height:1.8;">
+            <p><strong style="color:#ccc">bigDashimi</strong> — Dein persönliches Dashboard</p>
+            <p style="margin-top:10px">✏️ Station ändern: <code style="color:#00d4ff">assets/js/main.js</code></p>
+            <p>🔑 Wetter API Key: <a href="https://openweathermap.org/api" style="color:#00d4ff" target="_blank">openweathermap.org</a></p>
+            <p>📺 Fullscreen: <kbd style="background:#2a2a4a;padding:2px 6px;border-radius:3px">F11</kbd></p>
+        </div>
+    </div>
+
+</div>
