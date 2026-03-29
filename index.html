@@ -105,7 +105,7 @@ title: bigDashimi
         </div>
     </div>
 
-    <!-- Google Kalender -->
+    <!-- Google Kalender (Spalte 3, Reihe 1) -->
     <div class="widget widget-calendar">
         <div class="widget-title">
             <span class="icon">📅</span>
@@ -117,7 +117,40 @@ title: bigDashimi
         </div>
     </div>
 
-    <!-- Spotify Player -->
+    <!-- Datum + Status (Spalte 4, Reihe 1) -->
+    <div class="widget widget-status-combined">
+        <div class="widget-title">
+            <span class="icon">🗓</span>
+            DATUM & STATUS
+        </div>
+        <div class="date-compact">
+            <span class="date-big" id="date-day">--</span>
+            <div class="date-info">
+                <div class="date-month" id="date-month"></div>
+                <div class="date-weekday" id="date-weekday"></div>
+            </div>
+        </div>
+        <div class="status-compact">
+            <div class="status-item">
+                <span class="status-label"><span class="status-dot"></span>Dashboard</span>
+                <span class="status-value">Online</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Update</span>
+                <span class="status-value" id="last-update">--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Stationen</span>
+                <span class="status-value" id="station-count">3</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Wetter</span>
+                <span class="status-value" id="weather-count">1</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spotify Player (Spalte 3, Reihe 2) -->
     <div class="widget widget-spotify">
         <div class="widget-title">
             <span class="icon">🎵</span>
@@ -129,7 +162,7 @@ title: bigDashimi
         </div>
     </div>
 
-    <!-- Internet Speed -->
+    <!-- Speed + Info (Spalte 4, Reihe 2) -->
     <div class="widget widget-speed">
         <div class="widget-title">
             <span class="icon">📡</span>
@@ -150,59 +183,7 @@ title: bigDashimi
                     <span class="speed-detail-value" id="speed-status">Bereit</span>
                 </div>
             </div>
-            <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test starten</button>
-        </div>
-    </div>
-
-    <!-- Datum -->
-    <div class="widget">
-        <div class="widget-title">
-            <span class="icon">🗓</span>
-            DATUM
-        </div>
-        <div class="date-big" id="date-day">--</div>
-        <div class="date-month" id="date-month"></div>
-        <div class="date-weekday" id="date-weekday"></div>
-    </div>
-
-    <!-- Status -->
-    <div class="widget">
-        <div class="widget-title">
-            <span class="icon">⚡</span>
-            STATUS
-        </div>
-        <div class="status-item">
-            <span class="status-label"><span class="status-dot"></span>Dashboard</span>
-            <span class="status-value">Online</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">Letztes Update</span>
-            <span class="status-value" id="last-update">--:--</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">ÖV Stationen</span>
-            <span class="status-value" id="station-count">3 Haltestellen</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">Wetter</span>
-            <span class="status-value" id="weather-count">1 Standort</span>
-        </div>
-    </div>
-
-    <!-- Info Widget -->
-    <div class="widget">
-        <div class="widget-title">
-            <span class="icon">ℹ️</span>
-            INFO
-        </div>
-        <div style="color:#888; font-size:0.85rem; line-height:1.8;">
-            <p><strong style="color:#ccc">bigDashimi</strong> — Dein persönliches Dashboard</p>
-            <p style="margin-top:10px">⚙️ Einstellungen: <strong style="color:#00d4ff">Zahnrad-Button ⚙️</strong> an jedem Widget</p>
-            <p>🌤 Wetter: <span style="color:#00ff88">Open-Meteo (gratis)</span></p>
-            <p>🚉 ÖV: <span style="color:#00ff88">transport.opendata.ch</span></p>
-            <p>📅 Kalender: <span style="color:#00ff88">Google Calendar Embed</span></p>
-            <p>🎵 Spotify: <span style="color:#00ff88">Playlist/Album einbetten</span></p>
-            <p>📺 Fullscreen: <kbd style="background:#2a2a4a;padding:2px 6px;border-radius:3px">F11</kbd></p>
+            <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test</button>
         </div>
     </div>
 
