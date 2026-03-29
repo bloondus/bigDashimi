@@ -125,6 +125,27 @@ body {
     grid-row: span 2;
 }
 
+.station-section {
+    margin-bottom: 12px;
+}
+
+.station-section:last-child {
+    margin-bottom: 0;
+}
+
+.station-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #00d4ff;
+    padding: 8px 0 6px 0;
+    border-bottom: 1px solid #2a2a4a;
+    margin-bottom: 4px;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(145deg, #12122a, #1a1a35);
+    z-index: 1;
+}
+
 .departure-list {
     flex: 1;
     overflow-y: auto;

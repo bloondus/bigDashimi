@@ -7,9 +7,13 @@ const CONFIG = {
     weatherLon: 8.5417,     // Zürich Längengrad
     weatherCity: 'Zürich',
 
-    // ÖV Station (transport.opendata.ch - Schweizer ÖV)
-    oevStation: 'Zürich, HB',
-    oevLimit: 10,
+    // ÖV Stationen (transport.opendata.ch - Schweizer ÖV)
+    oevStations: [
+        { name: 'Spital Zollikerberg', query: 'Zollikerberg, Spital' },
+        { name: 'Einfangstrasse', query: 'Zürich, Einfangstrasse' },
+        { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
+    ],
+    oevLimit: 6,
 
     // Update-Intervalle (in Millisekunden)
     clockInterval: 1000,
@@ -123,50 +127,71 @@ function getWeatherDescription(code) {
     return descriptions[code] || 'Unbekannt';
 }
 
-// ----- ÖV Abfahrten -----
+// ----- ÖV Abfahrten (3 Stationen) -----
+async function fetchStation(station) {
+    try {
+        const url = `https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(station.query)}&limit=${CONFIG.oevLimit}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data;
+    } catch (err) {
+        console.error(`Fehler bei ${station.name}:`, err);
+        return null;
+    }
+}
+
+function renderDepartures(data, stationName) {
+    if (!data || !data.stationboard || data.stationboard.length === 0) {
+        return `<div class="station-section">
+            <div class="station-header">${stationName}</div>
+            <div class="loading">Keine Abfahrten</div>
+        </div>`;
+    }
+
+    const rows = data.stationboard.map(dep => {
+        const depTime = new Date(dep.stop.departure);
+        const now = new Date();
+        const diffMin = Math.round((depTime - now) / 60000);
+        const timeStr = depTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+
+        let lineClass = '';
+        const cat = (dep.category || '').toUpperCase();
+        if (cat === 'B' || cat === 'BUS' || cat === 'NFB') lineClass = 'bus';
+        if (cat === 'T' || cat === 'TRAM' || cat === 'NFT') lineClass = 'tram';
+
+        const lineLabel = dep.number || dep.name || '?';
+        const countdown = diffMin <= 0 ? 'jetzt' : `${diffMin}'`;
+
+        return `
+            <div class="departure-item">
+                <span class="dep-line ${lineClass}">${lineLabel}</span>
+                <span class="dep-destination">${dep.to}</span>
+                <span class="dep-time">${timeStr}</span>
+                <span class="dep-countdown">${countdown}</span>
+            </div>
+        `;
+    }).join('');
+
+    const realName = data.station ? data.station.name : stationName;
+    return `<div class="station-section">
+        <div class="station-header">🚏 ${realName}</div>
+        ${rows}
+    </div>`;
+}
+
 async function updateDepartures() {
     const el = document.getElementById('departures-list');
     try {
-        const url = `https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(CONFIG.oevStation)}&limit=${CONFIG.oevLimit}`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const results = await Promise.all(
+            CONFIG.oevStations.map(s => fetchStation(s))
+        );
 
-        if (!data.stationboard || data.stationboard.length === 0) {
-            el.innerHTML = '<div class="loading">Keine Abfahrten gefunden</div>';
-            return;
-        }
+        let html = '';
+        CONFIG.oevStations.forEach((station, i) => {
+            html += renderDepartures(results[i], station.name);
+        });
 
-        // Station-Name aktualisieren
-        const stationEl = document.getElementById('station-name');
-        if (stationEl && data.station) {
-            stationEl.textContent = data.station.name;
-        }
-
-        el.innerHTML = data.stationboard.map(dep => {
-            const depTime = new Date(dep.stop.departure);
-            const now = new Date();
-            const diffMin = Math.round((depTime - now) / 60000);
-            const timeStr = depTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
-
-            // Typ erkennen (S-Bahn, Bus, Tram, etc.)
-            let lineClass = '';
-            const cat = (dep.category || '').toUpperCase();
-            if (cat === 'B' || cat === 'BUS' || cat === 'NFB') lineClass = 'bus';
-            if (cat === 'T' || cat === 'TRAM' || cat === 'NFT') lineClass = 'tram';
-
-            const lineLabel = dep.number || dep.name || '?';
-            const countdown = diffMin <= 0 ? 'jetzt' : `${diffMin}'`;
-
-            return `
-                <div class="departure-item">
-                    <span class="dep-line ${lineClass}">${lineLabel}</span>
-                    <span class="dep-destination">${dep.to}</span>
-                    <span class="dep-time">${timeStr}</span>
-                    <span class="dep-countdown">${countdown}</span>
-                </div>
-            `;
-        }).join('');
-
+        el.innerHTML = html;
     } catch (err) {
         el.innerHTML = '<div class="error">⚠ ÖV-Daten nicht verfügbar</div>';
         console.error('ÖV-Fehler:', err);
