@@ -56,13 +56,13 @@ title: bigDashimi
     </div>
 
     <!-- Wetter -->
-    <div class="widget">
+    <div class="widget widget-weather">
         <div class="widget-title">
             <span class="icon">🌤</span>
-            WETTER — <span id="weather-city-display">Zürich</span>
-            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter-Standort ändern">⚙️</button>
+            WETTER
+            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter-Standorte bearbeiten">⚙️</button>
         </div>
-        <div id="weather-content">
+        <div class="weather-list" id="weather-content">
             <div class="loading">Lade Wetter...</div>
         </div>
     </div>
@@ -98,7 +98,7 @@ title: bigDashimi
         </div>
         <div class="status-item">
             <span class="status-label">Wetter</span>
-            <span class="status-value" id="weather-city-status">Zürich</span>
+            <span class="status-value" id="weather-count">1 Standort</span>
         </div>
     </div>
 

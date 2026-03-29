@@ -7,16 +7,14 @@ const DEFAULT_STATIONS = [
     { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
 ];
 
-const DEFAULT_WEATHER = {
-    lat: 47.3769,
-    lon: 8.5417,
-    city: 'Zürich',
-};
+const DEFAULT_WEATHER_LOCATIONS = [
+    { city: 'Zürich', lat: 47.3769, lon: 8.5417 },
+];
 
 // ----- Konfiguration -----
 const CONFIG = {
-    // Wetter – aus localStorage oder Default
-    ...loadWeatherConfig(),
+    // Wetter-Standorte – aus localStorage
+    weatherLocations: loadWeatherLocations(),
 
     // ÖV Stationen – aus localStorage
     oevStations: loadStations(),
@@ -41,24 +39,17 @@ function saveStations() {
     localStorage.setItem('bigdashimi-stations', JSON.stringify(CONFIG.oevStations));
 }
 
-// ----- localStorage: Wetter -----
-function loadWeatherConfig() {
+// ----- localStorage: Wetter-Standorte -----
+function loadWeatherLocations() {
     try {
-        const saved = localStorage.getItem('bigdashimi-weather');
-        if (saved) {
-            const w = JSON.parse(saved);
-            return { weatherLat: w.lat, weatherLon: w.lon, weatherCity: w.city };
-        }
-    } catch (e) { console.warn('Wetter-Config laden fehlgeschlagen', e); }
-    return { weatherLat: DEFAULT_WEATHER.lat, weatherLon: DEFAULT_WEATHER.lon, weatherCity: DEFAULT_WEATHER.city };
+        const saved = localStorage.getItem('bigdashimi-weather-locations');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { console.warn('Wetter-Standorte laden fehlgeschlagen', e); }
+    return DEFAULT_WEATHER_LOCATIONS.map(w => ({...w}));
 }
 
-function saveWeatherConfig() {
-    localStorage.setItem('bigdashimi-weather', JSON.stringify({
-        lat: CONFIG.weatherLat,
-        lon: CONFIG.weatherLon,
-        city: CONFIG.weatherCity,
-    }));
+function saveWeatherLocations() {
+    localStorage.setItem('bigdashimi-weather-locations', JSON.stringify(CONFIG.weatherLocations));
 }
 
 // ----- Settings Panel -----
@@ -66,7 +57,7 @@ let activeTab = 'stations';
 
 function openSettings() {
     document.getElementById('settings-overlay').classList.add('active');
-    switchTab('stations');
+    switchTab(activeTab);
 }
 
 function closeSettings() {
@@ -80,7 +71,7 @@ function switchTab(tab) {
     document.getElementById('tab-stations').style.display = tab === 'stations' ? 'block' : 'none';
     document.getElementById('tab-weather').style.display = tab === 'weather' ? 'block' : 'none';
     if (tab === 'stations') renderStationList();
-    if (tab === 'weather') renderWeatherSettings();
+    if (tab === 'weather') renderWeatherLocationList();
 }
 
 // -- Stationen Tab --
@@ -144,21 +135,36 @@ function updateStationCount() {
     if (countEl) countEl.textContent = `${CONFIG.oevStations.length} Haltestelle${CONFIG.oevStations.length !== 1 ? 'n' : ''}`;
 }
 
-// -- Wetter Tab --
-function renderWeatherSettings() {
+// -- Wetter Tab (Multi-Standorte) --
+function renderWeatherLocationList() {
     const container = document.getElementById('weather-settings-content');
+
+    const locationItems = CONFIG.weatherLocations.length === 0
+        ? '<div class="loading">Keine Wetter-Standorte konfiguriert</div>'
+        : CONFIG.weatherLocations.map((w, i) => `
+            <div class="settings-station-item">
+                <div class="settings-station-info">
+                    <span class="settings-station-name">🏙 ${w.city}</span>
+                    <span class="settings-station-query">${w.lat.toFixed(4)}, ${w.lon.toFixed(4)}</span>
+                </div>
+                <div class="settings-station-actions">
+                    <button class="btn-move" onclick="moveWeatherLocation(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Nach oben">▲</button>
+                    <button class="btn-move" onclick="moveWeatherLocation(${i}, 1)" ${i === CONFIG.weatherLocations.length - 1 ? 'disabled' : ''} title="Nach unten">▼</button>
+                    <button class="btn-delete" onclick="removeWeatherLocation(${i})" title="Entfernen">✕</button>
+                </div>
+            </div>
+        `).join('');
+
     container.innerHTML = `
-        <div class="settings-weather-current">
-            <span class="settings-station-name">📍 Aktueller Standort</span>
-            <span class="settings-weather-city">${CONFIG.weatherCity}</span>
-            <span class="settings-station-query">${CONFIG.weatherLat.toFixed(4)}, ${CONFIG.weatherLon.toFixed(4)}</span>
-        </div>
         <div class="settings-add">
-            <input type="text" id="weather-city-input" placeholder="Stadt eingeben (z.B. Bern, Basel, Wien...)" onkeydown="if(event.key==='Enter') searchWeatherCity()">
+            <input type="text" id="weather-city-input" placeholder="Stadt suchen (z.B. Bern, Basel, Wien...)" onkeydown="if(event.key==='Enter') searchWeatherCity()">
             <button class="btn-add" onclick="searchWeatherCity()">🔍 Suchen</button>
         </div>
         <div id="weather-search-results"></div>
+        <div class="settings-section-title">📍 Aktive Standorte (${CONFIG.weatherLocations.length})</div>
+        <div class="settings-station-list">${locationItems}</div>
     `;
+    updateWeatherCount();
 }
 
 async function searchWeatherCity() {
@@ -179,46 +185,62 @@ async function searchWeatherCity() {
             return;
         }
 
-        resultsEl.innerHTML = data.results.map((r, i) => `
-            <div class="settings-station-item weather-result" onclick="selectWeatherCity(${i})">
+        resultsEl.innerHTML = '<div class="settings-section-title">🔍 Suchergebnisse – klicke zum Hinzufügen</div>' +
+            data.results.map((r, i) => `
+            <div class="settings-station-item weather-result" onclick="addWeatherLocation(${i})">
                 <div class="settings-station-info">
                     <span class="settings-station-name">🏙 ${r.name}</span>
                     <span class="settings-station-query">${r.admin1 || ''} ${r.country || ''} • ${r.latitude.toFixed(2)}, ${r.longitude.toFixed(2)}</span>
                 </div>
+                <span style="color:#00d4ff; font-size:1.2rem;" title="Hinzufügen">+</span>
             </div>
         `).join('');
 
-        // Ergebnisse global speichern für selectWeatherCity
         window._weatherResults = data.results;
     } catch (err) {
         resultsEl.innerHTML = '<div class="error">⚠ Suche fehlgeschlagen</div>';
     }
 }
 
-function selectWeatherCity(index) {
+function addWeatherLocation(index) {
     const r = window._weatherResults[index];
-    CONFIG.weatherLat = r.latitude;
-    CONFIG.weatherLon = r.longitude;
-    CONFIG.weatherCity = r.name;
-    saveWeatherConfig();
-    renderWeatherSettings();
-    updateWeatherCityDisplay();
+    // Duplikat prüfen
+    const exists = CONFIG.weatherLocations.some(w => w.city === r.name && Math.abs(w.lat - r.latitude) < 0.01);
+    if (exists) {
+        alert(`${r.name} ist bereits in der Liste!`);
+        return;
+    }
+    CONFIG.weatherLocations.push({ city: r.name, lat: r.latitude, lon: r.longitude });
+    saveWeatherLocations();
+    renderWeatherLocationList();
+}
+
+function removeWeatherLocation(index) {
+    CONFIG.weatherLocations.splice(index, 1);
+    saveWeatherLocations();
+    renderWeatherLocationList();
+}
+
+function moveWeatherLocation(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= CONFIG.weatherLocations.length) return;
+    const temp = CONFIG.weatherLocations[index];
+    CONFIG.weatherLocations[index] = CONFIG.weatherLocations[newIndex];
+    CONFIG.weatherLocations[newIndex] = temp;
+    saveWeatherLocations();
+    renderWeatherLocationList();
 }
 
 function resetWeather() {
-    CONFIG.weatherLat = DEFAULT_WEATHER.lat;
-    CONFIG.weatherLon = DEFAULT_WEATHER.lon;
-    CONFIG.weatherCity = DEFAULT_WEATHER.city;
-    saveWeatherConfig();
-    renderWeatherSettings();
-    updateWeatherCityDisplay();
+    CONFIG.weatherLocations.length = 0;
+    DEFAULT_WEATHER_LOCATIONS.forEach(w => CONFIG.weatherLocations.push({...w}));
+    saveWeatherLocations();
+    renderWeatherLocationList();
 }
 
-function updateWeatherCityDisplay() {
-    const el = document.getElementById('weather-city-display');
-    if (el) el.textContent = CONFIG.weatherCity;
-    const statusEl = document.getElementById('weather-city-status');
-    if (statusEl) statusEl.textContent = CONFIG.weatherCity;
+function updateWeatherCount() {
+    const el = document.getElementById('weather-count');
+    if (el) el.textContent = `${CONFIG.weatherLocations.length} Standort${CONFIG.weatherLocations.length !== 1 ? 'e' : ''}`;
 }
 
 function applySettings() {
@@ -226,7 +248,7 @@ function applySettings() {
     updateDepartures();
     updateWeather();
     updateStationCount();
-    updateWeatherCityDisplay();
+    updateWeatherCount();
 }
 
 // ----- Uhrzeit & Datum -----
@@ -249,24 +271,34 @@ function updateClock() {
     document.getElementById('date-weekday').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
 }
 
-// ----- Wetter (Open-Meteo – GRATIS, kein Key nötig) -----
-async function updateWeather() {
-    const el = document.getElementById('weather-content');
+// ----- Wetter (Open-Meteo – Multi-Standorte) -----
+async function fetchWeather(location) {
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.weatherLat}&longitude=${CONFIG.weatherLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`;
         const res = await fetch(url);
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (err) {
+        console.error(`Wetter-Fehler für ${location.city}:`, err);
+        return null;
+    }
+}
 
-        if (!res.ok) {
-            el.innerHTML = '<div class="error">⚠ Wetter API nicht erreichbar</div>';
-            return;
-        }
+function renderWeatherCard(data, cityName) {
+    if (!data || !data.current) {
+        return `<div class="weather-section">
+            <div class="weather-city-header">🏙 ${cityName}</div>
+            <div class="error">⚠ Nicht verfügbar</div>
+        </div>`;
+    }
 
-        const data = await res.json();
-        const current = data.current;
-        const icon = getWeatherEmoji(current.weather_code);
-        const desc = getWeatherDescription(current.weather_code);
+    const current = data.current;
+    const icon = getWeatherEmoji(current.weather_code);
+    const desc = getWeatherDescription(current.weather_code);
 
-        el.innerHTML = `
+    return `
+        <div class="weather-section">
+            <div class="weather-city-header">🏙 ${cityName}</div>
             <div class="weather-main">
                 <div class="weather-icon">${icon}</div>
                 <div>
@@ -275,12 +307,29 @@ async function updateWeather() {
                 </div>
             </div>
             <div class="weather-details">
-                <span>💧 ${current.relative_humidity_2m}% Feuchtigkeit</span>
-                <span>🌬 ${Math.round(current.wind_speed_10m)} km/h Wind</span>
+                <span>💧 ${current.relative_humidity_2m}%</span>
+                <span>🌬 ${Math.round(current.wind_speed_10m)} km/h</span>
                 <span>🌡 Gefühlt ${Math.round(current.apparent_temperature)}°</span>
-                <span>📍 ${CONFIG.weatherCity}</span>
             </div>
-        `;
+        </div>
+    `;
+}
+
+async function updateWeather() {
+    const el = document.getElementById('weather-content');
+    if (CONFIG.weatherLocations.length === 0) {
+        el.innerHTML = '<div class="loading">Keine Wetter-Standorte – ⚙️ klicken</div>';
+        return;
+    }
+    try {
+        const results = await Promise.all(
+            CONFIG.weatherLocations.map(loc => fetchWeather(loc))
+        );
+        let html = '';
+        CONFIG.weatherLocations.forEach((loc, i) => {
+            html += renderWeatherCard(results[i], loc.city);
+        });
+        el.innerHTML = html;
     } catch (err) {
         el.innerHTML = '<div class="error">⚠ Wetter konnte nicht geladen werden</div>';
         console.error('Wetter-Fehler:', err);
@@ -414,15 +463,13 @@ function updateStatus() {
 
 // ----- Init -----
 document.addEventListener('DOMContentLoaded', () => {
-    // Sofort laden
     updateClock();
     updateWeather();
     updateDepartures();
     updateStatus();
-    updateWeatherCityDisplay();
     updateStationCount();
+    updateWeatherCount();
 
-    // Intervalle setzen
     setInterval(updateClock, CONFIG.clockInterval);
     setInterval(() => { updateWeather(); updateStatus(); }, CONFIG.weatherInterval);
     setInterval(() => { updateDepartures(); updateStatus(); }, CONFIG.oevInterval);

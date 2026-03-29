@@ -45,10 +45,11 @@ body {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: auto;
     gap: 15px;
     padding: 15px;
     height: calc(100vh - 70px);
+    overflow-y: auto;
 }
 
 /* Widgets */
@@ -80,6 +81,43 @@ body {
 
 .widget-title .icon {
     font-size: 1.2rem;
+}
+
+/* Wetter Widget */
+.widget-weather {
+    grid-row: span 2;
+}
+
+.weather-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.weather-section {
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #1f1f3a;
+}
+
+.weather-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.weather-city-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #00d4ff;
+    margin-bottom: 8px;
+}
+
+/* Settings Section Title */
+.settings-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    padding: 12px 20px 6px 20px;
 }
 
 /* Wetter Widget */
