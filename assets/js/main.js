@@ -2,10 +2,10 @@
 
 // ----- Konfiguration -----
 const CONFIG = {
-    // OpenWeatherMap: Gratis API Key holen unter https://openweathermap.org/api
-    weatherApiKey: 'DEIN_API_KEY',
+    // Wetter: Open-Meteo (GRATIS, kein API Key nötig!)
+    weatherLat: 47.3769,    // Zürich Breitengrad
+    weatherLon: 8.5417,     // Zürich Längengrad
     weatherCity: 'Zürich',
-    weatherCountry: 'CH',
 
     // ÖV Station (transport.opendata.ch - Schweizer ÖV)
     oevStation: 'Zürich, HB',
@@ -37,38 +37,36 @@ function updateClock() {
     document.getElementById('date-weekday').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
 }
 
-// ----- Wetter -----
+// ----- Wetter (Open-Meteo – GRATIS, kein Key nötig) -----
 async function updateWeather() {
     const el = document.getElementById('weather-content');
     try {
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${CONFIG.weatherCity},${CONFIG.weatherCountry}&appid=${CONFIG.weatherApiKey}&lang=de&units=metric`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.weatherLat}&longitude=${CONFIG.weatherLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`;
         const res = await fetch(url);
 
         if (!res.ok) {
-            el.innerHTML = `<div class="error">⚠ Wetter API nicht erreichbar (API Key setzen!)</div>
-                <div style="margin-top:15px; color:#555; font-size:0.85rem">
-                    Trage deinen kostenlosen API Key in <code>assets/js/main.js</code> ein.<br>
-                    Hol dir einen unter <a href="https://openweathermap.org/api" style="color:#00d4ff">openweathermap.org</a>
-                </div>`;
+            el.innerHTML = '<div class="error">⚠ Wetter API nicht erreichbar</div>';
             return;
         }
 
         const data = await res.json();
-        const icon = getWeatherEmoji(data.weather[0].icon);
+        const current = data.current;
+        const icon = getWeatherEmoji(current.weather_code);
+        const desc = getWeatherDescription(current.weather_code);
 
         el.innerHTML = `
             <div class="weather-main">
                 <div class="weather-icon">${icon}</div>
                 <div>
-                    <div class="weather-temp">${Math.round(data.main.temp)}°</div>
-                    <div class="weather-desc">${data.weather[0].description}</div>
+                    <div class="weather-temp">${Math.round(current.temperature_2m)}°</div>
+                    <div class="weather-desc">${desc}</div>
                 </div>
             </div>
             <div class="weather-details">
-                <span>💧 ${data.main.humidity}% Feuchtigkeit</span>
-                <span>🌬 ${Math.round(data.wind.speed * 3.6)} km/h Wind</span>
-                <span>🌡 Gefühlt ${Math.round(data.main.feels_like)}°</span>
-                <span>👁 ${(data.visibility / 1000).toFixed(1)} km Sicht</span>
+                <span>💧 ${current.relative_humidity_2m}% Feuchtigkeit</span>
+                <span>🌬 ${Math.round(current.wind_speed_10m)} km/h Wind</span>
+                <span>🌡 Gefühlt ${Math.round(current.apparent_temperature)}°</span>
+                <span>📍 ${CONFIG.weatherCity}</span>
             </div>
         `;
     } catch (err) {
@@ -77,19 +75,52 @@ async function updateWeather() {
     }
 }
 
-function getWeatherEmoji(iconCode) {
-    const map = {
-        '01d': '☀️', '01n': '🌙',
-        '02d': '⛅', '02n': '☁️',
-        '03d': '☁️', '03n': '☁️',
-        '04d': '☁️', '04n': '☁️',
-        '09d': '🌧', '09n': '🌧',
-        '10d': '🌦', '10n': '🌧',
-        '11d': '⛈', '11n': '⛈',
-        '13d': '❄️', '13n': '❄️',
-        '50d': '🌫', '50n': '🌫',
+function getWeatherEmoji(code) {
+    if (code === 0) return '☀️';
+    if (code <= 3) return '⛅';
+    if (code <= 48) return '🌫';
+    if (code <= 57) return '🌧';
+    if (code <= 65) return '🌧';
+    if (code <= 67) return '🌨';
+    if (code <= 77) return '❄️';
+    if (code <= 82) return '🌧';
+    if (code <= 86) return '❄️';
+    if (code <= 99) return '⛈';
+    return '🌤';
+}
+
+function getWeatherDescription(code) {
+    const descriptions = {
+        0: 'Klar',
+        1: 'Überwiegend klar',
+        2: 'Teilweise bewölkt',
+        3: 'Bewölkt',
+        45: 'Nebel',
+        48: 'Reifnebel',
+        51: 'Leichter Nieselregen',
+        53: 'Nieselregen',
+        55: 'Starker Nieselregen',
+        56: 'Gefrierender Nieselregen',
+        57: 'Starker gefr. Nieselregen',
+        61: 'Leichter Regen',
+        63: 'Regen',
+        65: 'Starker Regen',
+        66: 'Gefrierender Regen',
+        67: 'Starker gefr. Regen',
+        71: 'Leichter Schneefall',
+        73: 'Schneefall',
+        75: 'Starker Schneefall',
+        77: 'Schneekörner',
+        80: 'Leichte Regenschauer',
+        81: 'Regenschauer',
+        82: 'Starke Regenschauer',
+        85: 'Leichte Schneeschauer',
+        86: 'Starke Schneeschauer',
+        95: 'Gewitter',
+        96: 'Gewitter mit leichtem Hagel',
+        99: 'Gewitter mit starkem Hagel',
     };
-    return map[iconCode] || '🌤';
+    return descriptions[code] || 'Unbekannt';
 }
 
 // ----- ÖV Abfahrten -----
