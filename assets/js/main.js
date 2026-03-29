@@ -12,7 +12,7 @@ const DEFAULT_WEATHER_LOCATIONS = [
 ];
 
 const DEFAULT_CALENDAR_ID = 'de.ch%23holiday@group.v.calendar.google.com';
-const DEFAULT_SPOTIFY_URL = '';
+const DEFAULT_SPOTIFY_URL = 'https://open.spotify.com/playlist/0I65LEEJ7jSS3cAdENg852';
 
 // ----- Konfiguration -----
 const CONFIG = {
