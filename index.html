@@ -29,6 +29,8 @@ title: bigDashimi
             <div class="settings-tabs">
                 <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')">🚏 Stationen</button>
                 <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')">🌤 Wetter</button>
+                <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')">📅 Kalender</button>
+                <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')">🎵 Spotify</button>
             </div>
 
             <!-- Tab: Stationen -->
@@ -52,6 +54,42 @@ title: bigDashimi
                     <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
                 </div>
             </div>
+
+            <!-- Tab: Kalender -->
+            <div id="tab-calendar" style="display:none;">
+                <div class="settings-info-box">
+                    <p>📅 Google Calendar einbetten</p>
+                    <p style="color:#888;font-size:0.8rem;margin-top:6px">Google Calendar → Einstellungen → «Kalender integrieren» → Öffentliche URL kopieren</p>
+                </div>
+                <div class="settings-add">
+                    <input type="text" id="calendar-url-input" placeholder="Google Calendar ID (z.B. de.ch#holiday@group.v.calendar.google.com)">
+                </div>
+                <div style="padding:10px 20px;">
+                    <label style="color:#888;font-size:0.85rem;display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="calendar-darkmode" checked>
+                        Dark Mode
+                    </label>
+                </div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetCalendar()">↺ Zurücksetzen</button>
+                    <button class="btn-apply" onclick="applyCalendar()">✓ Übernehmen</button>
+                </div>
+            </div>
+
+            <!-- Tab: Spotify -->
+            <div id="tab-spotify" style="display:none;">
+                <div class="settings-info-box">
+                    <p>🎵 Spotify Playlist oder Album einbetten</p>
+                    <p style="color:#888;font-size:0.8rem;margin-top:6px">Spotify → Teilen → «Link kopieren» — funktioniert mit Playlists, Alben, Podcasts & Tracks</p>
+                </div>
+                <div class="settings-add">
+                    <input type="text" id="spotify-url-input" placeholder="Spotify-Link einfügen (z.B. https://open.spotify.com/playlist/...)">
+                </div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetSpotify()">↺ Zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySpotify()">✓ Übernehmen</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -67,10 +105,59 @@ title: bigDashimi
         </div>
     </div>
 
-    <!-- Kalender / Datum -->
-    <div class="widget">
+    <!-- Google Kalender -->
+    <div class="widget widget-calendar">
         <div class="widget-title">
             <span class="icon">📅</span>
+            KALENDER
+            <button class="btn-settings" onclick="openSettings(); switchTab('calendar')" title="Kalender konfigurieren">⚙️</button>
+        </div>
+        <div class="calendar-embed" id="calendar-content">
+            <div class="loading">Lade Kalender...</div>
+        </div>
+    </div>
+
+    <!-- Spotify Player -->
+    <div class="widget widget-spotify">
+        <div class="widget-title">
+            <span class="icon">🎵</span>
+            SPOTIFY
+            <button class="btn-settings" onclick="openSettings(); switchTab('spotify')" title="Spotify konfigurieren">⚙️</button>
+        </div>
+        <div class="spotify-embed" id="spotify-content">
+            <div class="loading">Spotify konfigurieren → ⚙️</div>
+        </div>
+    </div>
+
+    <!-- Internet Speed -->
+    <div class="widget widget-speed">
+        <div class="widget-title">
+            <span class="icon">📡</span>
+            INTERNET SPEED
+        </div>
+        <div class="speed-content" id="speed-content">
+            <div class="speed-gauge">
+                <div class="speed-value" id="speed-value">--</div>
+                <div class="speed-unit">Mbps</div>
+            </div>
+            <div class="speed-details">
+                <div class="speed-detail-item">
+                    <span class="speed-detail-label">Ping</span>
+                    <span class="speed-detail-value" id="speed-ping">--</span>
+                </div>
+                <div class="speed-detail-item">
+                    <span class="speed-detail-label">Status</span>
+                    <span class="speed-detail-value" id="speed-status">Bereit</span>
+                </div>
+            </div>
+            <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test starten</button>
+        </div>
+    </div>
+
+    <!-- Datum -->
+    <div class="widget">
+        <div class="widget-title">
+            <span class="icon">🗓</span>
             DATUM
         </div>
         <div class="date-big" id="date-day">--</div>
@@ -110,9 +197,11 @@ title: bigDashimi
         </div>
         <div style="color:#888; font-size:0.85rem; line-height:1.8;">
             <p><strong style="color:#ccc">bigDashimi</strong> — Dein persönliches Dashboard</p>
-            <p style="margin-top:10px">⚙️ Stationen bearbeiten: <strong style="color:#00d4ff">Zahnrad-Button ⚙️</strong> im ÖV Widget</p>
+            <p style="margin-top:10px">⚙️ Einstellungen: <strong style="color:#00d4ff">Zahnrad-Button ⚙️</strong> an jedem Widget</p>
             <p>🌤 Wetter: <span style="color:#00ff88">Open-Meteo (gratis)</span></p>
             <p>🚉 ÖV: <span style="color:#00ff88">transport.opendata.ch</span></p>
+            <p>📅 Kalender: <span style="color:#00ff88">Google Calendar Embed</span></p>
+            <p>🎵 Spotify: <span style="color:#00ff88">Playlist/Album einbetten</span></p>
             <p>📺 Fullscreen: <kbd style="background:#2a2a4a;padding:2px 6px;border-radius:3px">F11</kbd></p>
         </div>
     </div>

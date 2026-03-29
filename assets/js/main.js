@@ -11,6 +11,9 @@ const DEFAULT_WEATHER_LOCATIONS = [
     { city: 'Zürich', lat: 47.3769, lon: 8.5417 },
 ];
 
+const DEFAULT_CALENDAR_ID = 'de.ch%23holiday@group.v.calendar.google.com';
+const DEFAULT_SPOTIFY_URL = '';
+
 // ----- Konfiguration -----
 const CONFIG = {
     // Wetter-Standorte – aus localStorage
@@ -19,6 +22,13 @@ const CONFIG = {
     // ÖV Stationen – aus localStorage
     oevStations: loadStations(),
     oevLimit: 6,
+
+    // Kalender
+    calendarId: loadCalendarId(),
+    calendarDark: loadCalendarDark(),
+
+    // Spotify
+    spotifyUrl: loadSpotifyUrl(),
 
     // Update-Intervalle
     clockInterval: 1000,
@@ -52,6 +62,40 @@ function saveWeatherLocations() {
     localStorage.setItem('bigdashimi-weather-locations', JSON.stringify(CONFIG.weatherLocations));
 }
 
+// ----- localStorage: Kalender -----
+function loadCalendarId() {
+    try {
+        const saved = localStorage.getItem('bigdashimi-calendar-id');
+        if (saved) return saved;
+    } catch (e) { console.warn('Kalender laden fehlgeschlagen', e); }
+    return DEFAULT_CALENDAR_ID;
+}
+
+function saveCalendarId() {
+    localStorage.setItem('bigdashimi-calendar-id', CONFIG.calendarId);
+}
+
+function loadCalendarDark() {
+    try {
+        const saved = localStorage.getItem('bigdashimi-calendar-dark');
+        if (saved !== null) return saved === 'true';
+    } catch (e) {}
+    return true;
+}
+
+function saveCalendarDark() {
+    localStorage.setItem('bigdashimi-calendar-dark', CONFIG.calendarDark);
+}
+
+// ----- localStorage: Spotify -----
+function loadSpotifyUrl() {
+    try {
+        const saved = localStorage.getItem('bigdashimi-spotify-url');
+        if (saved) return saved;
+    } catch (e) { console.warn('Spotify laden fehlgeschlagen', e); }
+    return DEFAULT_SPOTIFY_URL;
+}
+
 // ----- Settings Panel -----
 let activeTab = 'stations';
 
@@ -70,8 +114,12 @@ function switchTab(tab) {
     document.querySelector(`.settings-tab[data-tab="${tab}"]`).classList.add('active');
     document.getElementById('tab-stations').style.display = tab === 'stations' ? 'block' : 'none';
     document.getElementById('tab-weather').style.display = tab === 'weather' ? 'block' : 'none';
+    document.getElementById('tab-calendar').style.display = tab === 'calendar' ? 'block' : 'none';
+    document.getElementById('tab-spotify').style.display = tab === 'spotify' ? 'block' : 'none';
     if (tab === 'stations') renderStationList();
     if (tab === 'weather') renderWeatherLocationList();
+    if (tab === 'calendar') loadCalendarSettings();
+    if (tab === 'spotify') loadSpotifySettings();
 }
 
 // -- Stationen Tab --
@@ -455,6 +503,189 @@ async function updateDepartures() {
     }
 }
 
+// ----- Kalender (Google Calendar Embed) -----
+function loadCalendarSettings() {
+    const input = document.getElementById('calendar-url-input');
+    const darkCheck = document.getElementById('calendar-darkmode');
+    if (input) input.value = decodeURIComponent(CONFIG.calendarId || '');
+    if (darkCheck) darkCheck.checked = CONFIG.calendarDark;
+}
+
+function applyCalendar() {
+    const input = document.getElementById('calendar-url-input');
+    const darkCheck = document.getElementById('calendar-darkmode');
+    const val = (input.value || '').trim();
+    if (val) {
+        CONFIG.calendarId = encodeURIComponent(val);
+    }
+    CONFIG.calendarDark = darkCheck ? darkCheck.checked : true;
+    saveCalendarId();
+    saveCalendarDark();
+    updateCalendar();
+    closeSettings();
+}
+
+function resetCalendar() {
+    CONFIG.calendarId = DEFAULT_CALENDAR_ID;
+    CONFIG.calendarDark = true;
+    saveCalendarId();
+    saveCalendarDark();
+    loadCalendarSettings();
+    updateCalendar();
+}
+
+function updateCalendar() {
+    const el = document.getElementById('calendar-content');
+    if (!CONFIG.calendarId) {
+        el.innerHTML = '<div class="loading">Kalender nicht konfiguriert – ⚙️ klicken</div>';
+        return;
+    }
+    const colorMode = CONFIG.calendarDark ? '&color=%2300d4ff&bgcolor=%23121212' : '';
+    const src = `https://calendar.google.com/calendar/embed?src=${CONFIG.calendarId}&ctz=Europe%2FZurich&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0${colorMode}`;
+    el.innerHTML = `<iframe src="${src}" frameborder="0" scrolling="no" class="calendar-iframe"></iframe>`;
+}
+
+// ----- Spotify Player -----
+function loadSpotifySettings() {
+    const input = document.getElementById('spotify-url-input');
+    if (input) input.value = CONFIG.spotifyUrl || '';
+}
+
+function spotifyLinkToEmbed(url) {
+    // Convert spotify share link to embed URL
+    // https://open.spotify.com/playlist/37i9dQZF1DX... → https://open.spotify.com/embed/playlist/37i9dQZF1DX...
+    if (!url) return '';
+    let clean = url.trim();
+    // Remove query params
+    clean = clean.split('?')[0];
+    // Already an embed URL?
+    if (clean.includes('/embed/')) return clean;
+    // Convert normal link to embed
+    clean = clean.replace('https://open.spotify.com/', 'https://open.spotify.com/embed/');
+    return clean;
+}
+
+function applySpotify() {
+    const input = document.getElementById('spotify-url-input');
+    CONFIG.spotifyUrl = (input.value || '').trim();
+    localStorage.setItem('bigdashimi-spotify-url', CONFIG.spotifyUrl);
+    updateSpotify();
+    closeSettings();
+}
+
+function resetSpotify() {
+    CONFIG.spotifyUrl = DEFAULT_SPOTIFY_URL;
+    localStorage.setItem('bigdashimi-spotify-url', '');
+    loadSpotifySettings();
+    updateSpotify();
+}
+
+function updateSpotify() {
+    const el = document.getElementById('spotify-content');
+    if (!CONFIG.spotifyUrl) {
+        el.innerHTML = '<div class="loading">Spotify nicht konfiguriert – ⚙️ klicken<br><span style="font-size:0.75rem;color:#555;margin-top:6px;display:block">Spotify → Teilen → Link kopieren</span></div>';
+        return;
+    }
+    const embedUrl = spotifyLinkToEmbed(CONFIG.spotifyUrl);
+    if (!embedUrl) {
+        el.innerHTML = '<div class="error">⚠ Ungültiger Spotify-Link</div>';
+        return;
+    }
+    el.innerHTML = `<iframe src="${embedUrl}?theme=0" class="spotify-iframe" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+}
+
+// ----- Internet Speed Test -----
+let speedTestRunning = false;
+
+async function runSpeedTest() {
+    if (speedTestRunning) return;
+    speedTestRunning = true;
+
+    const btn = document.getElementById('btn-speedtest');
+    const valueEl = document.getElementById('speed-value');
+    const pingEl = document.getElementById('speed-ping');
+    const statusEl = document.getElementById('speed-status');
+
+    btn.textContent = '⏳ Teste...';
+    btn.disabled = true;
+    statusEl.textContent = 'Messe Ping...';
+    valueEl.textContent = '...';
+    pingEl.textContent = '...';
+
+    try {
+        // Ping Test (measure latency to a fast CDN)
+        const pingResults = [];
+        for (let i = 0; i < 3; i++) {
+            const pingStart = performance.now();
+            await fetch('https://www.google.com/favicon.ico?_=' + Date.now(), {
+                mode: 'no-cors',
+                cache: 'no-store'
+            });
+            const pingEnd = performance.now();
+            pingResults.push(pingEnd - pingStart);
+        }
+        const avgPing = Math.round(pingResults.reduce((a, b) => a + b) / pingResults.length);
+        pingEl.textContent = avgPing + ' ms';
+
+        // Download Speed Test (fetch a known file and measure throughput)
+        statusEl.textContent = 'Messe Download...';
+
+        // Use multiple small fetches to estimate speed
+        const testUrls = [
+            'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png',
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/300px-PNG_transparency_demonstration_1.png'
+        ];
+
+        let totalBytes = 0;
+        let totalTime = 0;
+
+        for (const testUrl of testUrls) {
+            const start = performance.now();
+            try {
+                const res = await fetch(testUrl + '?_=' + Date.now(), { cache: 'no-store' });
+                const blob = await res.blob();
+                const end = performance.now();
+                totalBytes += blob.size;
+                totalTime += (end - start) / 1000; // seconds
+            } catch (e) {
+                // Skip failed URLs
+            }
+        }
+
+        if (totalTime > 0 && totalBytes > 0) {
+            const bitsPerSecond = (totalBytes * 8) / totalTime;
+            const mbps = bitsPerSecond / 1000000;
+            valueEl.textContent = mbps.toFixed(1);
+
+            // Categorize speed
+            if (mbps > 50) {
+                statusEl.textContent = '🟢 Sehr schnell';
+                statusEl.style.color = '#00ff88';
+            } else if (mbps > 10) {
+                statusEl.textContent = '🟡 Gut';
+                statusEl.style.color = '#ffa500';
+            } else {
+                statusEl.textContent = '🔴 Langsam';
+                statusEl.style.color = '#ff4444';
+            }
+        } else {
+            valueEl.textContent = '?';
+            statusEl.textContent = '⚠ Test fehlgeschlagen';
+            statusEl.style.color = '#ff4444';
+        }
+    } catch (err) {
+        console.error('Speed-Test Fehler:', err);
+        valueEl.textContent = '?';
+        pingEl.textContent = '?';
+        statusEl.textContent = '⚠ Fehler';
+        statusEl.style.color = '#ff4444';
+    }
+
+    btn.textContent = '▶ Erneut testen';
+    btn.disabled = false;
+    speedTestRunning = false;
+}
+
 // ----- Status Widget -----
 function updateStatus() {
     const lastUpdate = new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
@@ -466,6 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateClock();
     updateWeather();
     updateDepartures();
+    updateCalendar();
+    updateSpotify();
     updateStatus();
     updateStationCount();
     updateWeatherCount();

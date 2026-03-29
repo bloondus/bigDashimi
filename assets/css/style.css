@@ -45,7 +45,7 @@ body {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto;
+    grid-auto-rows: min-content;
     gap: 15px;
     padding: 15px;
     height: calc(100vh - 70px);
@@ -86,6 +86,138 @@ body {
 /* Wetter Widget */
 .widget-weather {
     grid-row: span 2;
+}
+
+/* Kalender Widget */
+.widget-calendar {
+    grid-column: span 2;
+}
+
+.calendar-embed {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.calendar-iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 10px;
+    background: #0a0a12;
+}
+
+/* Spotify Widget */
+.widget-spotify {
+    min-height: 200px;
+}
+
+.spotify-embed {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.spotify-iframe {
+    width: 100%;
+    height: 252px;
+    border: none;
+    border-radius: 12px;
+    background: #121212;
+}
+
+/* Internet Speed Widget */
+.widget-speed {
+    display: flex;
+    flex-direction: column;
+}
+
+.speed-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.speed-gauge {
+    text-align: center;
+}
+
+.speed-value {
+    font-size: 3.5rem;
+    font-weight: 200;
+    color: #00d4ff;
+    line-height: 1;
+}
+
+.speed-unit {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.speed-details {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+}
+
+.speed-detail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.speed-detail-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.speed-detail-value {
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 500;
+}
+
+.btn-speedtest {
+    background: linear-gradient(135deg, #00d4ff, #0088cc);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.5px;
+}
+
+.btn-speedtest:hover {
+    background: linear-gradient(135deg, #33ddff, #00aaee);
+    transform: scale(1.02);
+}
+
+.btn-speedtest:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    transform: none;
+}
+
+/* Settings Info Box */
+.settings-info-box {
+    padding: 15px 20px;
+    background: #1a1a35;
+    margin: 10px 20px;
+    border-radius: 10px;
+    color: #ccc;
+    font-size: 0.9rem;
 }
 
 .weather-list {
@@ -618,6 +750,9 @@ body {
     .widget-oev {
         grid-row: span 1;
     }
+    .widget-calendar {
+        grid-column: span 2;
+    }
 }
 
 @media (max-width: 600px) {
@@ -629,5 +764,15 @@ body {
     .dashboard-header {
         flex-direction: column;
         gap: 5px;
+    }
+    .widget-calendar {
+        grid-column: span 1;
+    }
+    .settings-tabs {
+        flex-wrap: wrap;
+    }
+    .settings-tab {
+        font-size: 0.8rem;
+        padding: 8px;
     }
 }
