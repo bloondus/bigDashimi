@@ -33,7 +33,7 @@ const CONFIG = {
     // Update-Intervalle
     clockInterval: 1000,
     weatherInterval: 5 * 60 * 1000,
-    oevInterval: 30 * 1000,
+    oevInterval: 60 * 1000,
 };
 
 // ----- localStorage: Stationen -----
@@ -435,10 +435,21 @@ function getWeatherDescription(code) {
 // ----- ÖV Abfahrten (3 Stationen) -----
 async function fetchStation(station) {
     try {
-        const url = `https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(station.query)}&limit=${CONFIG.oevLimit}`;
+        const url = `https://fahrplan.search.ch/api/stationboard.json?stop=${encodeURIComponent(station.query)}&limit=${CONFIG.oevLimit}`;
         const res = await fetch(url);
+        if (!res.ok) return null;
         const data = await res.json();
-        return data;
+        // search.ch Format in einheitliches Format umwandeln
+        return {
+            station: data.stop ? { name: data.stop.name } : null,
+            stationboard: (data.connections || []).map(c => ({
+                category: c['*G'] || c.type || '',
+                number: c.line || c['*L'] || '?',
+                name: c.line || '',
+                to: c.terminal ? c.terminal.name : '?',
+                stop: { departure: c.time }
+            }))
+        };
     } catch (err) {
         console.error(`Fehler bei ${station.name}:`, err);
         return null;
