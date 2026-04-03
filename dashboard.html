@@ -1443,31 +1443,43 @@ async function fetchCurrencyChange() {
     } catch(e) { return null; }
 }
 
-// Halbleiter & Tech-Aktien (Yahoo Finance API - gratis, kein Key)
+// Halbleiter & Tech-Aktien (Yahoo Finance via CORS-Proxy)
 async function fetchTechStocks() {
     const cached = cacheGet('stocks');
     if (cached) return cached;
     try {
         const symbols = ['NVDA', 'AMD', 'INTC', 'TSM', 'MU'];
         const results = {};
-        const fetches = symbols.map(sym =>
-            fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=5d')
-                .then(r => r.ok ? r.json() : null)
-                .then(data => {
-                    if (!data || !data.chart || !data.chart.result) return;
-                    const meta = data.chart.result[0].meta;
-                    const prev = meta.chartPreviousClose || meta.previousClose;
-                    const price = meta.regularMarketPrice;
-                    const changePct = prev ? ((price - prev) / prev * 100) : 0;
-                    results[sym] = {
-                        price: price,
-                        currency: meta.currency || 'USD',
-                        change: changePct,
-                        yrHi: meta.fiftyTwoWeekHigh || null,
-                        yrLo: meta.fiftyTwoWeekLow || null
-                    };
-                }).catch(() => {})
-        );
+        const fetches = symbols.map(async sym => {
+            const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=5d';
+            let data = null;
+            // Versuche direkt (falls CORS erlaubt), dann via Proxy-Kette
+            try {
+                const res = await fetch(url);
+                if (res.ok) data = await res.json();
+            } catch(e) {}
+            if (!data) {
+                for (const makeProxy of CORS_PROXIES) {
+                    try {
+                        const res = await fetch(makeProxy(url));
+                        if (res.ok) { data = await res.json(); break; }
+                    } catch(e) {}
+                }
+            }
+            if (data && data.chart && data.chart.result) {
+                const meta = data.chart.result[0].meta;
+                const prev = meta.chartPreviousClose || meta.previousClose;
+                const price = meta.regularMarketPrice;
+                const changePct = prev ? ((price - prev) / prev * 100) : 0;
+                results[sym] = {
+                    price: price,
+                    currency: meta.currency || 'USD',
+                    change: changePct,
+                    yrHi: meta.fiftyTwoWeekHigh || null,
+                    yrLo: meta.fiftyTwoWeekLow || null
+                };
+            }
+        });
         await Promise.all(fetches);
         return Object.keys(results).length > 0 ? (cacheSet('stocks', results, 5 * 60 * 1000), results) : null;
     } catch(e) { return null; }
