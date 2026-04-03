@@ -400,35 +400,61 @@ button:focus:not(:focus-visible) { outline: none; }
     .header-clock { font-size: 1.6rem; letter-spacing: 3px; }
     .header-date { font-size: 0.75rem; margin-left: 0; }
     .dashboard-grid {
-        grid-template-columns: 1fr; height: auto; overflow-y: visible;
+        grid-template-columns: 1fr !important; height: auto; overflow-y: visible;
         gap: 8px; padding: 8px;
     }
-    .widget {
+    /* Force alle Widgets auf 1 Spalte – auch bei inline style="grid-column: span 2" */
+    .widget,
+    .dashboard-grid > * {
+        grid-column: span 1 !important; grid-row: span 1 !important;
         padding: 14px 12px; border-radius: 10px;
         min-height: auto; max-height: none; overflow: visible;
+        min-width: 0; /* Verhindert Overflow durch lange Inhalte */
     }
-    .widget-oev, .widget-weather { grid-row: span 1; }
     .departure-list, .weather-list { max-height: none; overflow-y: visible; }
     .station-header { position: static; }
     .departure-item { padding: 6px 0; }
-    .dep-line { font-size: 0.8rem; padding: 4px 10px; min-width: 44px; }
-    .dep-destination { font-size: 0.85rem; }
+    .dep-line { font-size: 0.8rem; padding: 4px 10px; min-width: 44px; text-align: center; }
+    .dep-destination { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dep-time, .dep-countdown { font-size: 0.8rem; }
     .btn-settings { font-size: 1.2rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
     .settings-overlay { align-items: flex-end; }
     .settings-panel { width: 100%; max-width: 100%; max-height: 90vh; border-radius: 16px 16px 0 0; }
-    .settings-tabs { flex-wrap: nowrap; overflow-x: auto; }
-    .settings-tab { padding: 10px 8px; font-size: 0.75rem; }
+    .settings-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .settings-tab { padding: 10px 8px; font-size: 0.75rem; white-space: nowrap; }
     .settings-add { flex-direction: column; }
-    .btn-speedtest { width: 100%; padding: 12px; }
+    .settings-add input { width: 100% !important; }
+    .btn-speedtest { width: 100%; padding: 12px; min-height: 44px; }
     .notes-textarea { min-height: 120px; }
     .news-ticker-bar { padding: 8px 0; }
     .news-ticker-content { font-size: 0.85rem; }
+    /* iframes responsive */
+    iframe { width: 100% !important; max-width: 100% !important; }
+    /* Markt-Widget: Range-Bars und Sparklines ausblenden (zu klein) */
+    .hw-range { display: none; }
+    .hw-sparkline { display: none; }
+    .hw-row { flex-wrap: wrap; gap: 4px; }
+    .hw-name { font-size: 0.8rem; flex: 1 1 100%; }
+    .hw-price { font-size: 0.85rem; }
+    .hw-change { font-size: 0.75rem; }
+    /* Countdown kompakt */
+    .countdown-item { flex-direction: column; gap: 2px; align-items: flex-start; }
+    /* Wetter kompakt */
+    .weather-details { font-size: 0.75rem; }
+    .weather-temp { font-size: 1.8rem; }
+    /* Karte Mindesthöhe */
+    #map-content iframe, #calendar-content iframe, #spotify-content iframe { min-height: 250px; }
 }
+/* Responsive - Sehr kleine Screens (iPhone SE etc.) */
 @media (max-width: 360px) {
     .dashboard-header { padding: 8px 10px; }
     .header-clock { font-size: 1.3rem; }
+    .header-date { font-size: 0.65rem; }
     .dashboard-grid { padding: 6px; gap: 6px; }
-    .widget { padding: 10px; }
+    .widget { padding: 10px !important; }
+    .widget-title { font-size: 0.5rem; letter-spacing: 1px; }
+    .hw-name { font-size: 0.7rem; }
+    .dep-line { min-width: 36px; font-size: 0.7rem; padding: 3px 6px; }
 }
     </style>
 </head>
@@ -692,7 +718,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 // ===== bigDashimi - Standalone Dashboard =====
-const VERSION = '1.8.1';
+const VERSION = '1.9.0';
 
 // ----- Defaults -----
 const DEFAULT_STATIONS = [

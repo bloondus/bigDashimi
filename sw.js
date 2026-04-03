@@ -1,5 +1,5 @@
 // bigDashimi Service Worker – Network-First (immer aktuell, Offline-Fallback)
-const CACHE_NAME = 'bigdashimi-v1.8.1';
+const CACHE_NAME = 'bigdashimi-v1.9.0';
 const ASSETS = [
     '/bigDashimi/dashboard.html',
     '/bigDashimi/manifest.json',
