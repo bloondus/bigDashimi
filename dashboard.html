@@ -54,7 +54,7 @@ body {
 .dashboard-header {
     background: rgba(13, 13, 26, 0.92);
     backdrop-filter: blur(8px);
-    padding: 8px 25px;
+    padding: 4px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -62,17 +62,17 @@ body {
     flex-shrink: 0;
     transition: background 3s ease;
 }
-.dashboard-header h1 { font-size: 1.1rem; color: #00d4ff; font-weight: 600; }
-.header-clock { font-size: 1.4rem; font-weight: 300; color: #fff; letter-spacing: 2px; }
-.header-date { font-size: 0.8rem; color: #888; margin-left: 12px; }
+.dashboard-header h1 { font-size: 1rem; color: #00d4ff; font-weight: 600; }
+.header-clock { font-size: 1.2rem; font-weight: 300; color: #fff; letter-spacing: 2px; }
+.header-date { font-size: 0.7rem; color: #888; margin-left: 10px; }
 
 /* Grid Layout - 5 Spalten, 3 Reihen */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1fr;
-    grid-template-rows: 1fr 1fr 0.6fr 0.8fr;
-    gap: 8px;
-    padding: 8px;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 5px;
+    padding: 5px;
     flex: 1;
     overflow: hidden;
 }
@@ -82,8 +82,8 @@ body {
     background: linear-gradient(145deg, rgba(18,18,42,0.75), rgba(26,26,53,0.75));
     backdrop-filter: blur(6px);
     border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 6px 8px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -93,17 +93,17 @@ body {
 .widget:hover { border-color: #00d4ff44; }
 
 .widget-title {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #00d4ff;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
 }
-.widget-title .icon { font-size: 0.9rem; }
+.widget-title .icon { font-size: 0.8rem; }
 
 /* ÖV Widget */
 .widget-oev { grid-row: span 2; }
@@ -137,7 +137,7 @@ body {
 .weather-section:last-child { border-bottom: none; margin-bottom: 0; }
 .weather-city-header { font-size: 0.7rem; font-weight: 600; color: #00d4ff; margin-bottom: 3px; }
 .weather-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.weather-temp { font-size: 1.8rem; font-weight: 200; color: #fff; }
+.weather-temp { font-size: 1.5rem; font-weight: 200; color: #fff; }
 .weather-desc { font-size: 0.75rem; color: #aaa; text-transform: capitalize; }
 .weather-icon { font-size: 2rem; }
 .weather-details { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 0.7rem; color: #888; }
@@ -149,7 +149,7 @@ body {
 
 /* Datum & Status Widget */
 .date-compact { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.date-compact .date-big { font-size: 2.4rem; font-weight: 200; color: #fff; line-height: 1; }
+.date-compact .date-big { font-size: 2rem; font-weight: 200; color: #fff; line-height: 1; }
 .date-info { display: flex; flex-direction: column; gap: 1px; }
 .date-compact .date-month { font-size: 0.8rem; color: #00d4ff; }
 .date-compact .date-weekday { font-size: 0.7rem; color: #888; }
@@ -167,7 +167,7 @@ body {
 /* Speed Widget */
 .speed-content { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 2px 0; }
 .speed-gauge { text-align: center; }
-.speed-value { font-size: 2rem; font-weight: 200; color: #00d4ff; line-height: 1; }
+.speed-value { font-size: 1.6rem; font-weight: 200; color: #00d4ff; line-height: 1; }
 .speed-unit { font-size: 0.65rem; color: #666; margin-top: 2px; text-transform: uppercase; letter-spacing: 2px; }
 .speed-details { display: flex; gap: 14px; width: 100%; justify-content: center; }
 .speed-detail-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
@@ -190,15 +190,15 @@ body {
 
 /* === Countdown Widget === */
 .countdown-content { flex: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
-.countdown-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #1a1a35; border-radius: 8px; border-left: 3px solid #00d4ff; }
-.countdown-label { font-size: 0.78rem; color: #ccc; flex: 1; }
-.countdown-value { font-size: 0.85rem; font-weight: 600; color: #00d4ff; white-space: nowrap; }
+.countdown-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 6px; background: #1a1a35; border-radius: 6px; border-left: 3px solid #00d4ff; }
+.countdown-label { font-size: 0.7rem; color: #ccc; flex: 1; }
+.countdown-value { font-size: 0.75rem; font-weight: 600; color: #00d4ff; white-space: nowrap; }
 .countdown-value.urgent { color: #ff4444; }
 .countdown-value.today { color: #00ff88; }
 
 /* === Mondphase Widget === */
 .moon-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.moon-emoji { font-size: 2.8rem; line-height: 1; }
+.moon-emoji { font-size: 2.2rem; line-height: 1; }
 .moon-name { font-size: 0.8rem; color: #fff; font-weight: 500; }
 .moon-details { display: flex; flex-direction: column; gap: 2px; align-items: center; font-size: 0.7rem; color: #888; }
 
@@ -236,7 +236,7 @@ body {
 .news-ticker-bar {
     background: linear-gradient(135deg, #0d0d1a, #1a1a2e);
     border-top: 1px solid #2a2a4a;
-    padding: 6px 0;
+    padding: 4px 0;
     overflow: hidden;
     white-space: nowrap;
     flex-shrink: 0;
@@ -244,7 +244,7 @@ body {
 .news-ticker-content {
     display: inline-block;
     animation: ticker 90s linear infinite;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: #aaa;
 }
 .news-ticker-content:hover { animation-play-state: paused; }
@@ -484,7 +484,7 @@ body {
     </div>
 
     <!-- 9: Countdown -->
-    <div class="widget" style="grid-column: span 2;">
+    <div class="widget">
         <div class="widget-title">
             <span class="icon">⏱️</span> COUNTDOWN
             <button class="btn-settings" onclick="openSettings(); switchTab('countdown')" title="Countdown bearbeiten">⚙️</button>
@@ -493,13 +493,13 @@ body {
     </div>
 
     <!-- 10: Notizen -->
-    <div class="widget" style="grid-column: span 2;">
+    <div class="widget">
         <div class="widget-title"><span class="icon">📝</span> NOTIZEN</div>
         <div class="notes-content">
-            <textarea class="notes-textarea" id="notes-textarea" placeholder="Notizen, Einkaufsliste, Todos..." oninput="saveNotes()"></textarea>
+            <textarea class="notes-textarea" id="notes-textarea" placeholder="Notizen, Todos..." oninput="saveNotes()"></textarea>
             <div class="notes-footer">
                 <span id="notes-chars">0 Zeichen</span>
-                <span>💾 auto-gespeichert</span>
+                <span>💾 auto</span>
             </div>
         </div>
     </div>
@@ -514,7 +514,7 @@ body {
 
     <!-- 12: Markt & Hardware Preise -->
     <div class="widget" style="grid-column: span 2;">
-        <div class="widget-title"><span class="icon">💰</span> MARKT & HARDWARE PREISE</div>
+        <div class="widget-title"><span class="icon">💰</span> MARKT & HARDWARE</div>
         <div class="hw-content" id="hw-content">
             <div class="loading">⏳ Lade Marktdaten...</div>
         </div>
