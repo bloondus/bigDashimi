@@ -18,17 +18,49 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: relative;
+    transition: background 3s ease;
+}
+
+/* === Dynamischer Hintergrund & Wetter-Canvas === */
+#weather-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+.dashboard-header, .dashboard-grid, .news-ticker-bar, .settings-overlay {
+    position: relative;
+    z-index: 1;
+}
+/* Lightning flash */
+@keyframes lightning {
+    0%, 100% { opacity: 0; }
+    5% { opacity: 0.8; }
+    10% { opacity: 0; }
+    15% { opacity: 0.6; }
+    20% { opacity: 0; }
+}
+.lightning-flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.15);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
 }
 
 /* Header */
 .dashboard-header {
-    background: linear-gradient(135deg, #0d0d1a, #1a1a2e);
+    background: rgba(13, 13, 26, 0.92);
+    backdrop-filter: blur(8px);
     padding: 8px 25px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #2a2a4a;
     flex-shrink: 0;
+    transition: background 3s ease;
 }
 .dashboard-header h1 { font-size: 1.1rem; color: #00d4ff; font-weight: 600; }
 .header-clock { font-size: 1.4rem; font-weight: 300; color: #fff; letter-spacing: 2px; }
@@ -47,14 +79,15 @@ body {
 
 /* Widgets */
 .widget {
-    background: linear-gradient(145deg, #12122a, #1a1a35);
+    background: linear-gradient(145deg, rgba(18,18,42,0.88), rgba(26,26,53,0.88));
+    backdrop-filter: blur(4px);
     border: 1px solid #2a2a4a;
     border-radius: 12px;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, background 3s ease;
     min-height: 0;
 }
 .widget:hover { border-color: #00d4ff44; }
@@ -324,6 +357,10 @@ body {
     </style>
 </head>
 <body>
+
+<!-- WEATHER ANIMATION CANVAS -->
+<canvas id="weather-canvas"></canvas>
+<div id="lightning-overlay" class="lightning-flash"></div>
 
 <!-- HEADER -->
 <header class="dashboard-header">
@@ -720,7 +757,14 @@ function renderWeatherCard(data, cityName) {
 async function updateWeather() {
     const el = document.getElementById('weather-content');
     if (CONFIG.weatherLocations.length === 0) { el.innerHTML = '<div class="loading">Keine Standorte – ⚙️</div>'; return; }
-    try { const results = await Promise.all(CONFIG.weatherLocations.map(loc => fetchWeather(loc))); let html = ''; CONFIG.weatherLocations.forEach((loc, i) => { html += renderWeatherCard(results[i], loc.city); }); el.innerHTML = html; } catch(e) { el.innerHTML = '<div class="error">⚠ Wetter nicht verfügbar</div>'; }
+    try {
+        const results = await Promise.all(CONFIG.weatherLocations.map(loc => fetchWeather(loc)));
+        let html = ''; CONFIG.weatherLocations.forEach((loc, i) => { html += renderWeatherCard(results[i], loc.city); }); el.innerHTML = html;
+        // Wetter-Animation basierend auf erstem Standort
+        if (results[0] && results[0].current) {
+            updateWeatherAnimation(results[0].current.weather_code);
+        }
+    } catch(e) { el.innerHTML = '<div class="error">⚠ Wetter nicht verfügbar</div>'; }
 }
 function getWeatherEmoji(code) { if (code === 0) return '☀️'; if (code <= 3) return '⛅'; if (code <= 48) return '🌫'; if (code <= 57) return '🌧'; if (code <= 65) return '🌧'; if (code <= 67) return '🌨'; if (code <= 77) return '❄️'; if (code <= 82) return '🌧'; if (code <= 86) return '❄️'; if (code <= 99) return '⛈'; return '🌤'; }
 function getWeatherDescription(code) { const d = { 0:'Klar', 1:'Überwiegend klar', 2:'Teilweise bewölkt', 3:'Bewölkt', 45:'Nebel', 48:'Reifnebel', 51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen', 61:'Leichter Regen', 63:'Regen', 65:'Starker Regen', 71:'Leichter Schnee', 73:'Schneefall', 75:'Starker Schneefall', 80:'Regenschauer', 81:'Regenschauer', 82:'Starke Regenschauer', 85:'Schneeschauer', 86:'Starke Schneeschauer', 95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Gewitter mit starkem Hagel' }; return d[code] || 'Unbekannt'; }
@@ -886,8 +930,167 @@ async function updateNews() {
 // ----- Status -----
 function updateStatus() { document.getElementById('last-update').textContent = new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); }
 
+// ===== DYNAMISCHER HINTERGRUND (Tageszeit) =====
+let currentWeatherCode = 0;
+
+function getTimeOfDayTheme() {
+    const h = new Date().getHours();
+    // Nacht: 22-5, Dämmerung: 5-7 & 19-22, Tag: 7-17, Abend: 17-19
+    if (h >= 5 && h < 7)   return { bg: 'linear-gradient(135deg, #0d1b2a, #1b2838, #2a4a6b)', header: 'rgba(13,27,42,0.92)', label: 'Morgendämmerung' };
+    if (h >= 7 && h < 10)  return { bg: 'linear-gradient(135deg, #1a1a2e, #16213e, #1a3a5c)', header: 'rgba(22,33,62,0.92)', label: 'Morgen' };
+    if (h >= 10 && h < 15) return { bg: 'linear-gradient(135deg, #0f1923, #162032, #1a2a44)', header: 'rgba(15,25,35,0.92)', label: 'Mittag' };
+    if (h >= 15 && h < 17) return { bg: 'linear-gradient(135deg, #141824, #1a2030, #1e2a3e)', header: 'rgba(20,24,36,0.92)', label: 'Nachmittag' };
+    if (h >= 17 && h < 19) return { bg: 'linear-gradient(135deg, #1a1020, #2a1a2e, #3a2040)', header: 'rgba(42,26,46,0.92)', label: 'Abend' };
+    if (h >= 19 && h < 22) return { bg: 'linear-gradient(135deg, #0d0d1a, #15102a, #1a1030)', header: 'rgba(13,13,26,0.92)', label: 'Abenddämmerung' };
+    return { bg: 'linear-gradient(135deg, #05050e, #0a0a18, #0d0d22)', header: 'rgba(5,5,14,0.92)', label: 'Nacht' };
+}
+
+function updateDynamicBackground() {
+    const theme = getTimeOfDayTheme();
+    document.body.style.background = theme.bg;
+    document.querySelector('.dashboard-header').style.background = theme.header;
+}
+
+// ===== WETTER-ANIMATIONEN (Canvas) =====
+const weatherCanvas = { canvas: null, ctx: null, particles: [], animId: null, width: 0, height: 0 };
+
+function initWeatherCanvas() {
+    weatherCanvas.canvas = document.getElementById('weather-canvas');
+    weatherCanvas.ctx = weatherCanvas.canvas.getContext('2d');
+    function resize() {
+        weatherCanvas.width = window.innerWidth;
+        weatherCanvas.height = window.innerHeight;
+        weatherCanvas.canvas.width = weatherCanvas.width;
+        weatherCanvas.canvas.height = weatherCanvas.height;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+}
+
+function spawnParticles(type, count) {
+    weatherCanvas.particles = [];
+    for (let i = 0; i < count; i++) {
+        const p = { x: Math.random() * weatherCanvas.width, y: Math.random() * weatherCanvas.height };
+        if (type === 'rain') {
+            p.speed = 6 + Math.random() * 8;
+            p.length = 12 + Math.random() * 18;
+            p.opacity = 0.15 + Math.random() * 0.3;
+            p.wind = 1.5 + Math.random() * 2;
+        } else if (type === 'snow') {
+            p.speed = 0.5 + Math.random() * 1.5;
+            p.radius = 1 + Math.random() * 3;
+            p.opacity = 0.3 + Math.random() * 0.5;
+            p.wobble = Math.random() * Math.PI * 2;
+            p.wobbleSpeed = 0.01 + Math.random() * 0.03;
+        } else if (type === 'fog') {
+            p.radius = 80 + Math.random() * 160;
+            p.opacity = 0.02 + Math.random() * 0.05;
+            p.speedX = (Math.random() - 0.5) * 0.3;
+            p.speedY = (Math.random() - 0.5) * 0.1;
+        }
+        p.type = type;
+        weatherCanvas.particles.push(p);
+    }
+}
+
+function animateWeatherParticles() {
+    const ctx = weatherCanvas.ctx;
+    const W = weatherCanvas.width;
+    const H = weatherCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    weatherCanvas.particles.forEach(p => {
+        if (p.type === 'rain') {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.wind, p.y + p.length);
+            ctx.strokeStyle = 'rgba(120, 180, 255, ' + p.opacity + ')';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            p.x += p.wind;
+            p.y += p.speed;
+            if (p.y > H) { p.y = -p.length; p.x = Math.random() * W; }
+            if (p.x > W) p.x = 0;
+        } else if (p.type === 'snow') {
+            p.wobble += p.wobbleSpeed;
+            ctx.beginPath();
+            ctx.arc(p.x + Math.sin(p.wobble) * 1.5, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(220, 230, 255, ' + p.opacity + ')';
+            ctx.fill();
+            p.y += p.speed;
+            p.x += Math.sin(p.wobble) * 0.5;
+            if (p.y > H) { p.y = -p.radius * 2; p.x = Math.random() * W; }
+        } else if (p.type === 'fog') {
+            ctx.beginPath();
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+            grad.addColorStop(0, 'rgba(180, 190, 200, ' + p.opacity + ')');
+            grad.addColorStop(1, 'rgba(180, 190, 200, 0)');
+            ctx.fillStyle = grad;
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x > W + p.radius) p.x = -p.radius;
+            if (p.x < -p.radius) p.x = W + p.radius;
+            if (p.y > H + p.radius) p.y = -p.radius;
+        }
+    });
+
+    weatherCanvas.animId = requestAnimationFrame(animateWeatherParticles);
+}
+
+function triggerLightning() {
+    const overlay = document.getElementById('lightning-overlay');
+    overlay.style.animation = 'lightning 0.6s ease';
+    setTimeout(() => { overlay.style.animation = 'none'; }, 700);
+}
+
+function updateWeatherAnimation(weatherCode) {
+    currentWeatherCode = weatherCode;
+    if (weatherCanvas.animId) cancelAnimationFrame(weatherCanvas.animId);
+    weatherCanvas.particles = [];
+
+    if (!weatherCode && weatherCode !== 0) return;
+
+    // Regen (51-67, 80-82)
+    if ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82)) {
+        const intensity = weatherCode >= 63 || weatherCode >= 81 ? 200 : weatherCode >= 53 ? 120 : 60;
+        spawnParticles('rain', intensity);
+        animateWeatherParticles();
+    }
+    // Schnee (71-77, 85-86)
+    else if ((weatherCode >= 71 && weatherCode <= 77) || (weatherCode >= 85 && weatherCode <= 86)) {
+        const intensity = weatherCode >= 75 || weatherCode >= 86 ? 150 : weatherCode >= 73 ? 80 : 40;
+        spawnParticles('snow', intensity);
+        animateWeatherParticles();
+    }
+    // Gewitter (95-99)
+    else if (weatherCode >= 95 && weatherCode <= 99) {
+        spawnParticles('rain', 250);
+        animateWeatherParticles();
+        // Blitz-Intervall
+        if (window._lightningInterval) clearInterval(window._lightningInterval);
+        window._lightningInterval = setInterval(() => {
+            if (Math.random() < 0.4) triggerLightning();
+        }, 3000);
+    }
+    // Nebel (45, 48)
+    else if (weatherCode >= 45 && weatherCode <= 48) {
+        spawnParticles('fog', 20);
+        animateWeatherParticles();
+    }
+    // Klar / bewölkt → keine Animation
+    else {
+        const ctx = weatherCanvas.ctx;
+        ctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+        if (window._lightningInterval) { clearInterval(window._lightningInterval); window._lightningInterval = null; }
+    }
+}
+
 // ----- Init -----
 document.addEventListener('DOMContentLoaded', () => {
+    initWeatherCanvas();
+    updateDynamicBackground();
     updateClock(); updateWeather(); updateDepartures(); updateCalendar(); updateSpotify();
     updateStatus(); updateStationCount(); updateWeatherCount();
     updateQuote(); updateCountdown(); updateMoon(); updateMap(); initNotes(); updateNews();
@@ -898,6 +1101,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateCountdown, 60000);
     setInterval(updateNews, CONFIG.newsInterval);
     setInterval(updateQuote, CONFIG.quoteInterval);
+    // Hintergrund alle 5 Min aktualisieren (sanfter Tageszeit-Wechsel)
+    setInterval(updateDynamicBackground, 5 * 60 * 1000);
 });
 </script>
 </body>
