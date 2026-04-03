@@ -70,7 +70,7 @@ body {
 .dashboard-grid {
     display: grid;
     grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1fr;
-    grid-template-rows: 1fr 1fr 0.6fr;
+    grid-template-rows: 1fr 1fr 0.6fr 0.8fr;
     gap: 8px;
     padding: 8px;
     flex: 1;
@@ -216,6 +216,21 @@ body {
 .notes-textarea:focus { border-color: #00d4ff; }
 .notes-textarea::placeholder { color: #444; }
 .notes-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; color: #555; flex-shrink: 0; }
+
+/* === Markt & Hardware Preise === */
+.hw-content { flex: 1; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+.hw-section { margin-bottom: 2px; }
+.hw-section-title { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.5px; color: #555; padding: 2px 0; border-bottom: 1px solid #1f1f3a; margin-bottom: 2px; }
+.hw-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px; border-radius: 5px; font-size: 0.72rem; transition: background 0.2s; }
+.hw-row:hover { background: rgba(255,255,255,0.03); }
+.hw-name { color: #ccc; display: flex; align-items: center; gap: 5px; flex: 1; }
+.hw-name .hw-icon { font-size: 0.85rem; }
+.hw-price { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+.hw-change { font-size: 0.68rem; font-weight: 600; min-width: 65px; text-align: right; font-variant-numeric: tabular-nums; }
+.hw-change.up { color: #00ff88; }
+.hw-change.down { color: #ff4444; }
+.hw-change.neutral { color: #666; }
+.hw-updated { font-size: 0.5rem; color: #444; text-align: right; margin-top: auto; padding-top: 2px; }
 
 /* === News Ticker === */
 .news-ticker-bar {
@@ -494,6 +509,14 @@ body {
         <div class="widget-title"><span class="icon">🗺️</span> KARTE</div>
         <div class="map-embed" id="map-content">
             <div class="loading">Lade Karte...</div>
+        </div>
+    </div>
+
+    <!-- 12: Markt & Hardware Preise -->
+    <div class="widget" style="grid-column: span 2;">
+        <div class="widget-title"><span class="icon">💰</span> MARKT & HARDWARE PREISE</div>
+        <div class="hw-content" id="hw-content">
+            <div class="loading">⏳ Lade Marktdaten...</div>
         </div>
     </div>
 
@@ -1128,6 +1151,172 @@ function updateWeatherAnimation(weatherCode) {
     }
 }
 
+// ===== MARKT & HARDWARE PREISE (automatisch) =====
+
+// Crypto-Preise (CoinGecko - gratis, kein Key)
+async function fetchCrypto() {
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,chf&include_24hr_change=true');
+        if (!res.ok) return null;
+        return await res.json();
+    } catch(e) { return null; }
+}
+
+// Währungskurse (Frankfurter API - gratis, kein Key, unbegrenzt)
+async function fetchCurrencyRates() {
+    try {
+        const res = await fetch('https://api.frankfurter.app/latest?from=CHF&to=EUR,USD,GBP,CNY');
+        if (!res.ok) return null;
+        return await res.json();
+    } catch(e) { return null; }
+}
+
+// Währungskurse Veränderung (gestern vs heute)
+async function fetchCurrencyChange() {
+    try {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const res = await fetch('https://api.frankfurter.app/' + yesterday + '?from=CHF&to=EUR,USD,GBP,CNY');
+        if (!res.ok) return null;
+        return await res.json();
+    } catch(e) { return null; }
+}
+
+// Halbleiter & Tech-Aktien (Yahoo Finance über CORS-Proxy)
+async function fetchTechStocks() {
+    const symbols = ['NVDA','AMD','INTC','TSM','MU'];
+    const results = {};
+    for (const sym of symbols) {
+        try {
+            const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?range=5d&interval=1d';
+            const text = await fetchWithProxy(url);
+            if (text) {
+                const data = JSON.parse(text);
+                const meta = data.chart.result[0].meta;
+                const closes = data.chart.result[0].indicators.quote[0].close.filter(c => c !== null);
+                const prev = closes.length >= 2 ? closes[closes.length - 2] : meta.chartPreviousClose;
+                results[sym] = {
+                    price: meta.regularMarketPrice,
+                    prev: prev,
+                    currency: meta.currency,
+                    change: prev ? ((meta.regularMarketPrice - prev) / prev * 100) : 0
+                };
+            }
+        } catch(e) {}
+    }
+    return Object.keys(results).length > 0 ? results : null;
+}
+
+function formatChange(pct) {
+    if (pct === null || pct === undefined || isNaN(pct)) return { text: '—', cls: 'neutral' };
+    const p = parseFloat(pct).toFixed(1);
+    if (p > 0) return { text: '↗ +' + p + '%', cls: 'up' };
+    if (p < 0) return { text: '↘ ' + p + '%', cls: 'down' };
+    return { text: '→ 0.0%', cls: 'neutral' };
+}
+
+function formatPrice(val, currency) {
+    if (val === null || val === undefined) return '—';
+    if (val >= 1000) return currency + Math.round(val).toLocaleString('de-CH');
+    if (val >= 1) return currency + val.toFixed(2);
+    return currency + val.toFixed(4);
+}
+
+async function updateMarketPrices() {
+    const el = document.getElementById('hw-content');
+    let html = '';
+
+    // Alle Daten parallel laden
+    const [stocks, crypto, rates, prevRates] = await Promise.all([
+        fetchTechStocks(),
+        fetchCrypto(),
+        fetchCurrencyRates(),
+        fetchCurrencyChange()
+    ]);
+
+    // 1. Halbleiter & Tech-Aktien
+    html += '<div class="hw-section"><div class="hw-section-title">🏭 Halbleiter-Aktien (DRAM/GPU/CPU)</div>';
+    const stockNames = {
+        'NVDA': { name: 'Nvidia', icon: '🟢', desc: 'GPU' },
+        'AMD': { name: 'AMD', icon: '🔴', desc: 'CPU/GPU' },
+        'INTC': { name: 'Intel', icon: '🔵', desc: 'CPU' },
+        'TSM': { name: 'TSMC', icon: '⚪', desc: 'Fertigung' },
+        'MU': { name: 'Micron', icon: '🟡', desc: 'DRAM/NAND' }
+    };
+    if (stocks) {
+        for (const [sym, info] of Object.entries(stockNames)) {
+            if (stocks[sym]) {
+                const s = stocks[sym];
+                const ch = formatChange(s.change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + info.icon + '</span>' + info.name + ' <span style="color:#555;font-size:0.6rem">(' + info.desc + ')</span></span>'
+                    + '<span class="hw-price">' + formatPrice(s.price, '$') + '</span>'
+                    + '<span class="hw-change ' + ch.cls + '">' + ch.text + '</span>'
+                    + '</div>';
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Aktiendaten laden...</span></div>';
+    }
+    html += '</div>';
+
+    // 2. Crypto (GPU-Markt Indikator)
+    html += '<div class="hw-section"><div class="hw-section-title">₿ Crypto (GPU-Nachfrage Indikator)</div>';
+    if (crypto) {
+        const coins = [
+            { key: 'bitcoin', name: 'Bitcoin', icon: '₿' },
+            { key: 'ethereum', name: 'Ethereum', icon: '⟠' }
+        ];
+        for (const coin of coins) {
+            if (crypto[coin.key]) {
+                const c = crypto[coin.key];
+                const ch24 = formatChange(c.usd_24h_change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + coin.icon + '</span>' + coin.name + '</span>'
+                    + '<span class="hw-price">' + formatPrice(c.usd, '$') + '</span>'
+                    + '<span class="hw-change ' + ch24.cls + '">' + ch24.text + '</span>'
+                    + '</div>';
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Crypto laden...</span></div>';
+    }
+    html += '</div>';
+
+    // 3. Währungen (Import-Preise)
+    html += '<div class="hw-section"><div class="hw-section-title">💱 Währungen (Import-Kosten)</div>';
+    if (rates && rates.rates) {
+        const currencies = [
+            { code: 'EUR', icon: '🇪🇺', name: 'Euro' },
+            { code: 'USD', icon: '🇺🇸', name: 'Dollar' },
+            { code: 'GBP', icon: '🇬🇧', name: 'Pfund' },
+            { code: 'CNY', icon: '🇨🇳', name: 'Yuan' }
+        ];
+        for (const cur of currencies) {
+            if (rates.rates[cur.code]) {
+                const rate = rates.rates[cur.code];
+                let change = null;
+                if (prevRates && prevRates.rates && prevRates.rates[cur.code]) {
+                    change = ((rate - prevRates.rates[cur.code]) / prevRates.rates[cur.code] * 100);
+                }
+                const ch = formatChange(change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + cur.icon + '</span>CHF/' + cur.code + '</span>'
+                    + '<span class="hw-price">' + rate.toFixed(4) + '</span>'
+                    + '<span class="hw-change ' + ch.cls + '">' + ch.text + '</span>'
+                    + '</div>';
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Kurse laden...</span></div>';
+    }
+    html += '</div>';
+
+    // Info
+    html += '<div class="hw-updated">⟳ ' + new Date().toLocaleTimeString('de-CH', {hour:'2-digit',minute:'2-digit'}) + ' · Auto-Refresh 10 Min · Micron/Samsung = DRAM-Preis · CHF/USD = Import-Kosten</div>';
+
+    el.innerHTML = html;
+}
+
 // ----- Init -----
 document.addEventListener('DOMContentLoaded', () => {
     initWeatherCanvas();
@@ -1135,6 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateClock(); updateWeather(); updateDepartures(); updateCalendar(); updateSpotify();
     updateStatus(); updateStationCount(); updateWeatherCount();
     updateQuote(); updateCountdown(); updateMoon(); updateMap(); initNotes(); updateNews();
+    updateMarketPrices();
 
     setInterval(updateClock, CONFIG.clockInterval);
     setInterval(() => { updateWeather(); updateStatus(); }, CONFIG.weatherInterval);
@@ -1142,6 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateCountdown, 60000);
     setInterval(updateNews, CONFIG.newsInterval);
     setInterval(updateQuote, CONFIG.quoteInterval);
+    setInterval(updateMarketPrices, 10 * 60 * 1000);
     // Hintergrund alle 5 Min aktualisieren (sanfter Tageszeit-Wechsel)
     setInterval(updateDynamicBackground, 5 * 60 * 1000);
 
