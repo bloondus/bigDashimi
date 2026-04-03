@@ -299,6 +299,13 @@ body {
     * { transition-duration: 0s !important; }
 }
 
+/* Keyboard Focus */
+:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+}
+button:focus:not(:focus-visible) { outline: none; }
+
 /* Loading & Error */
 .loading { color: var(--c-text-faint); font-style: italic; text-align: center; padding: 15px; font-size: 0.8rem; }
 .error { color: var(--c-danger); font-size: 0.8rem; }
@@ -415,57 +422,57 @@ body {
 <body>
 
 <!-- WEATHER ANIMATION CANVAS -->
-<canvas id="weather-canvas"></canvas>
-<div id="lightning-overlay" class="lightning-flash"></div>
+<canvas id="weather-canvas" role="presentation" aria-hidden="true"></canvas>
+<div id="lightning-overlay" class="lightning-flash" aria-hidden="true"></div>
 
 <!-- HEADER -->
-<header class="dashboard-header">
+<header class="dashboard-header" role="banner">
     <h1>📊 bigDashimi</h1>
     <div style="display:flex; align-items:center; gap:15px;">
-        <span class="header-clock" id="header-time">--:--:--</span>
-        <span class="header-date" id="header-date"></span>
+        <time class="header-clock" id="header-time" aria-live="polite">--:--:--</time>
+        <span class="header-date" id="header-date" aria-live="polite"></span>
     </div>
 </header>
 
 <!-- DASHBOARD GRID -->
-<div class="dashboard-grid">
+<main class="dashboard-grid" role="main">
 
     <!-- 1: ÖV Abfahrten -->
-    <div class="widget widget-oev">
+    <section class="widget widget-oev" aria-label="ÖV Abfahrten">
         <div class="widget-title">
-            <span class="icon">🚉</span> ÖV ABFAHRTEN
-            <button class="btn-settings" onclick="openSettings()" title="Stationen bearbeiten">⚙️</button>
+            <span class="icon" aria-hidden="true">🚉</span> ÖV ABFAHRTEN
+            <button class="btn-settings" onclick="openSettings()" title="Stationen bearbeiten" aria-label="ÖV-Stationen bearbeiten">⚙️</button>
         </div>
         <div class="departure-list" id="departures-list">
             <div class="loading">Lade Abfahrten...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 2: Wetter -->
-    <div class="widget widget-weather">
+    <section class="widget widget-weather" aria-label="Wetter">
         <div class="widget-title">
-            <span class="icon">🌤</span> WETTER
-            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter bearbeiten">⚙️</button>
+            <span class="icon" aria-hidden="true">🌤</span> WETTER
+            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter bearbeiten" aria-label="Wetterstandorte bearbeiten">⚙️</button>
         </div>
         <div class="weather-list" id="weather-content">
             <div class="loading">Lade Wetter...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 3: Kalender -->
-    <div class="widget widget-calendar">
+    <section class="widget widget-calendar" aria-label="Kalender">
         <div class="widget-title">
-            <span class="icon">📅</span> KALENDER
-            <button class="btn-settings" onclick="openSettings(); switchTab('calendar')" title="Kalender konfigurieren">⚙️</button>
+            <span class="icon" aria-hidden="true">📅</span> KALENDER
+            <button class="btn-settings" onclick="openSettings(); switchTab('calendar')" title="Kalender konfigurieren" aria-label="Kalender konfigurieren">⚙️</button>
         </div>
         <div class="calendar-embed" id="calendar-content">
             <div class="loading">Lade Kalender...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 4: Datum & Status -->
-    <div class="widget">
-        <div class="widget-title"><span class="icon">🗓</span> DATUM & STATUS</div>
+    <section class="widget" aria-label="Datum und Status">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗓</span> DATUM & STATUS</div>
         <div class="date-compact">
             <span class="date-big" id="date-day">--</span>
             <div class="date-info">
@@ -479,38 +486,38 @@ body {
             <div class="status-item"><span class="status-label">Stationen</span><span class="status-value" id="station-count">3</span></div>
             <div class="status-item"><span class="status-label">Wetter</span><span class="status-value" id="weather-count">1</span></div>
         </div>
-    </div>
+    </section>
 
     <!-- 5: Mondphase -->
-    <div class="widget">
-        <div class="widget-title"><span class="icon">🌙</span> MOND & SONNE</div>
+    <section class="widget" aria-label="Mondphase">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🌙</span> MOND & SONNE</div>
         <div class="moon-content" id="moon-content">
             <div class="loading">Lade...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 6: Spotify -->
-    <div class="widget widget-spotify">
+    <section class="widget widget-spotify" aria-label="Spotify">
         <div class="widget-title">
-            <span class="icon">🎵</span> SPOTIFY
-            <button class="btn-settings" onclick="openSettings(); switchTab('spotify')" title="Spotify konfigurieren">⚙️</button>
+            <span class="icon" aria-hidden="true">🎵</span> SPOTIFY
+            <button class="btn-settings" onclick="openSettings(); switchTab('spotify')" title="Spotify konfigurieren" aria-label="Spotify konfigurieren">⚙️</button>
         </div>
         <div class="spotify-embed" id="spotify-content">
             <div class="loading">Lade Spotify...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 7: Zitat des Tages -->
-    <div class="widget">
-        <div class="widget-title"><span class="icon">🗣️</span> ZITAT DES TAGES</div>
+    <section class="widget" aria-label="Zitat des Tages">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗣️</span> ZITAT DES TAGES</div>
         <div class="quote-content" id="quote-content">
             <div class="loading">Lade Zitat...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 8: Internet Speed -->
-    <div class="widget widget-speed">
-        <div class="widget-title"><span class="icon">📡</span> SPEED</div>
+    <section class="widget widget-speed" aria-label="Internet Speed Test">
+        <div class="widget-title"><span class="icon" aria-hidden="true">📡</span> SPEED</div>
         <div class="speed-content" id="speed-content">
             <div class="speed-gauge">
                 <div class="speed-value" id="speed-value">--</div>
@@ -522,20 +529,20 @@ body {
             </div>
             <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test</button>
         </div>
-    </div>
+    </section>
 
     <!-- 9: Countdown -->
-    <div class="widget">
+    <section class="widget" aria-label="Countdown">
         <div class="widget-title">
-            <span class="icon">⏱️</span> COUNTDOWN
-            <button class="btn-settings" onclick="openSettings(); switchTab('countdown')" title="Countdown bearbeiten">⚙️</button>
+            <span class="icon" aria-hidden="true">⏱️</span> COUNTDOWN
+            <button class="btn-settings" onclick="openSettings(); switchTab('countdown')" title="Countdown bearbeiten" aria-label="Countdown bearbeiten">⚙️</button>
         </div>
         <div class="countdown-content" id="countdown-content"></div>
-    </div>
+    </section>
 
     <!-- 10: Notizen -->
-    <div class="widget">
-        <div class="widget-title"><span class="icon">📝</span> NOTIZEN</div>
+    <section class="widget" aria-label="Notizen">
+        <div class="widget-title"><span class="icon" aria-hidden="true">📝</span> NOTIZEN</div>
         <div class="notes-content">
             <textarea class="notes-textarea" id="notes-textarea" placeholder="Notizen, Todos..." oninput="saveNotes()"></textarea>
             <div class="notes-footer">
@@ -543,46 +550,46 @@ body {
                 <span>💾 auto</span>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- 11: Mini-Karte -->
-    <div class="widget">
-        <div class="widget-title"><span class="icon">🗺️</span> KARTE</div>
+    <section class="widget" aria-label="Karte">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗺️</span> KARTE</div>
         <div class="map-embed" id="map-content">
             <div class="loading">Lade Karte...</div>
         </div>
-    </div>
+    </section>
 
     <!-- 12: Markt & Hardware Preise -->
-    <div class="widget" style="grid-column: span 2;">
-        <div class="widget-title"><span class="icon">💰</span> MARKT & HARDWARE</div>
+    <section class="widget" style="grid-column: span 2;" aria-label="Markt und Hardware Preise">
+        <div class="widget-title"><span class="icon" aria-hidden="true">💰</span> MARKT & HARDWARE</div>
         <div class="hw-content" id="hw-content">
             <div class="loading">⏳ Lade Marktdaten...</div>
         </div>
-    </div>
+    </section>
 
-</div>
+</main>
 
 <!-- NEWS TICKER -->
-<div class="news-ticker-bar">
-    <div class="news-ticker-content" id="news-ticker">
+<footer class="news-ticker-bar" role="contentinfo" aria-label="News Ticker">
+    <div class="news-ticker-content" id="news-ticker" aria-live="off">
         <span class="news-item"><span class="news-source">📰</span> Lade News...</span>
     </div>
-</div>
+</footer>
 
 <!-- SETTINGS OVERLAY -->
 <div class="settings-overlay" id="settings-overlay">
     <div class="settings-panel">
         <div class="settings-header">
             <h2>⚙️ Einstellungen</h2>
-            <button class="btn-close" onclick="closeSettings()">✕</button>
+            <button class="btn-close" onclick="closeSettings()" aria-label="Einstellungen schliessen">✕</button>
         </div>
-        <div class="settings-tabs">
-            <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')">🚏 Stationen</button>
-            <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')">🌤 Wetter</button>
-            <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')">📅 Kalender</button>
-            <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')">🎵 Spotify</button>
-            <button class="settings-tab" data-tab="countdown" onclick="switchTab('countdown')">⏱️ Countdown</button>
+        <div class="settings-tabs" role="tablist">
+            <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')" role="tab" aria-selected="true">🚏 Stationen</button>
+            <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')" role="tab" aria-selected="false">🌤 Wetter</button>
+            <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')" role="tab" aria-selected="false">📅 Kalender</button>
+            <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')" role="tab" aria-selected="false">🎵 Spotify</button>
+            <button class="settings-tab" data-tab="countdown" onclick="switchTab('countdown')" role="tab" aria-selected="false">⏱️ Countdown</button>
         </div>
         <div id="tab-stations">
             <div class="settings-add">
@@ -682,13 +689,16 @@ const CORS_PROXIES = [
     url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
 ];
 
-// XSS-Schutz: Text-Sanitizer
+// XSS-Schutz: Text-Sanitizer (performant, kein DOM-Element)
 function sanitize(str) {
     if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+// URL-Validation für iframes
+function isValidUrl(str, allowedHosts) {
+    try { const u = new URL(str); if (!['https:','http:'].includes(u.protocol)) return false; if (allowedHosts && !allowedHosts.some(h => u.hostname.endsWith(h))) return false; return true; } catch { return false; }
+}
+let weatherLoaded = false;
 
 // API-Cache (localStorage mit TTL)
 function cacheGet(key) {
@@ -868,6 +878,7 @@ async function updateWeather() {
     try {
         const results = await Promise.all(CONFIG.weatherLocations.map(loc => fetchWeather(loc)));
         let html = ''; CONFIG.weatherLocations.forEach((loc, i) => { html += renderWeatherCard(results[i], loc.city); }); el.innerHTML = html;
+        weatherLoaded = true;
         // Wetter-Animation basierend auf erstem Standort
         if (results[0] && results[0].current) {
             updateWeatherAnimation(results[0].current.weather_code);
@@ -887,10 +898,10 @@ function renderDepartures(data, stationName) {
 async function updateDepartures() { const el = document.getElementById('departures-list'); try { const results = await Promise.all(CONFIG.oevStations.map(s => fetchStation(s))); let html = ''; CONFIG.oevStations.forEach((s, i) => { html += renderDepartures(results[i], s.name); }); el.innerHTML = html; } catch(e) { el.innerHTML = '<div class="error">⚠ ÖV nicht verfügbar</div>'; } }
 
 // ----- Kalender -----
-function updateCalendar() { const el = document.getElementById('calendar-content'); if (!CONFIG.calendarId) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const colorMode = CONFIG.calendarDark ? '&color=%2300d4ff&bgcolor=%23121212' : ''; el.innerHTML = '<iframe src="https://calendar.google.com/calendar/embed?src=' + CONFIG.calendarId + '&ctz=Europe%2FZurich&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0' + colorMode + '" frameborder="0" scrolling="no" class="calendar-iframe"></iframe>'; }
+function updateCalendar() { const el = document.getElementById('calendar-content'); if (!CONFIG.calendarId) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const colorMode = CONFIG.calendarDark ? '&color=%2300d4ff&bgcolor=%23121212' : ''; const calUrl = 'https://calendar.google.com/calendar/embed?src=' + CONFIG.calendarId + '&ctz=Europe%2FZurich&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0' + colorMode; if (!isValidUrl(calUrl, ['google.com'])) { el.innerHTML = '<div class="error">⚠ Ungültige Kalender-URL</div>'; return; } el.innerHTML = '<iframe src="' + calUrl + '" frameborder="0" scrolling="no" class="calendar-iframe" title="Google Kalender"></iframe>'; }
 
 // ----- Spotify -----
-function updateSpotify() { const el = document.getElementById('spotify-content'); if (!CONFIG.spotifyUrl) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const embedUrl = spotifyLinkToEmbed(CONFIG.spotifyUrl); if (!embedUrl) { el.innerHTML = '<div class="error">⚠ Ungültiger Link</div>'; return; } el.innerHTML = '<iframe src="' + embedUrl + '?theme=0" class="spotify-iframe" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>'; }
+function updateSpotify() { const el = document.getElementById('spotify-content'); if (!CONFIG.spotifyUrl) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const embedUrl = spotifyLinkToEmbed(CONFIG.spotifyUrl); if (!embedUrl || !isValidUrl(embedUrl, ['spotify.com'])) { el.innerHTML = '<div class="error">⚠ Ungültiger Link</div>'; return; } el.innerHTML = '<iframe src="' + embedUrl + '?theme=0" class="spotify-iframe" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify Player"></iframe>'; }
 
 // ----- Speed Test -----
 let speedTestRunning = false;
@@ -991,7 +1002,9 @@ function updateMap() {
     const el = document.getElementById('map-content');
     const lat = CONFIG.weatherLocations.length > 0 ? CONFIG.weatherLocations[0].lat : DEFAULT_MAP_LAT;
     const lon = CONFIG.weatherLocations.length > 0 ? CONFIG.weatherLocations[0].lon : DEFAULT_MAP_LON;
-    el.innerHTML = '<iframe class="map-iframe" src="https://www.openstreetmap.org/export/embed.html?bbox=' + (lon - 0.02) + '%2C' + (lat - 0.01) + '%2C' + (lon + 0.02) + '%2C' + (lat + 0.01) + '&layer=mapnik&marker=' + lat + '%2C' + lon + '" loading="lazy"></iframe>';
+    const mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + (lon - 0.02) + '%2C' + (lat - 0.01) + '%2C' + (lon + 0.02) + '%2C' + (lat + 0.01) + '&layer=mapnik&marker=' + lat + '%2C' + lon;
+    if (!isValidUrl(mapUrl, ['openstreetmap.org'])) { el.innerHTML = '<div class="error">⚠ Ungültige Karten-URL</div>'; return; }
+    el.innerHTML = '<iframe class="map-iframe" src="' + mapUrl + '" loading="lazy" title="OpenStreetMap Karte"></iframe>';
 }
 
 // ----- Notizen -----
@@ -1539,14 +1552,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Demo-Regen nur wenn kein echtes Wetter und reduced-motion nicht aktiv
+    // Demo-Regen nur wenn kein echtes Wetter, nicht geladen, und reduced-motion nicht aktiv
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!prefersReducedMotion && (!currentWeatherCode || currentWeatherCode <= 3)) {
         setTimeout(() => {
+            if (weatherLoaded) return; // Echtes Wetter hat bereits übernommen
             spawnParticles('rain', 80);
             animateWeatherParticles();
             setTimeout(() => {
-                if (currentWeatherCode <= 3) {
+                if (!weatherLoaded && currentWeatherCode <= 3) {
                     cancelAnimationFrame(weatherCanvas.animId);
                     weatherCanvas.animId = null;
                     weatherCanvas.particles = [];
