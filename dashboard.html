@@ -11,6 +11,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="All-in-One IT-Dashboard: 12 Widgets, 7 APIs, 0 API-Keys">
+    <meta property="og:title" content="bigDashimi — IT Dashboard">
+    <meta property="og:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei. ÖV, Wetter, Aktien, Crypto, News und mehr.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bloondus.github.io/bigDashimi/dashboard.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="bigDashimi — IT Dashboard">
+    <meta name="twitter:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei">
     <style>
 /* ===== CSS VARIABLES ===== */
 :root {
@@ -683,7 +690,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 // ===== bigDashimi - Standalone Dashboard =====
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 
 // ----- Defaults -----
 const DEFAULT_STATIONS = [
@@ -1566,6 +1573,35 @@ async function updateMarketPrices() {
 
 // ----- Init -----
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ===== Smoke-Tests (nur in Dev/Konsole sichtbar) =====
+    try {
+        // sanitize()
+        console.assert(sanitize('<script>') === '&lt;script&gt;', 'FAIL: sanitize XSS');
+        console.assert(sanitize(null) === '', 'FAIL: sanitize null');
+        console.assert(sanitize('') === '', 'FAIL: sanitize empty');
+        console.assert(sanitize('Hello') === 'Hello', 'FAIL: sanitize plain');
+        console.assert(sanitize('a"b') === 'a&quot;b', 'FAIL: sanitize quotes');
+        // isValidUrl()
+        console.assert(isValidUrl('https://google.com', ['google.com']) === true, 'FAIL: validUrl allow');
+        console.assert(isValidUrl('https://evil.com', ['google.com']) === false, 'FAIL: validUrl block');
+        console.assert(isValidUrl('javascript:alert(1)', ['google.com']) === false, 'FAIL: validUrl js');
+        console.assert(isValidUrl('not-a-url') === false, 'FAIL: validUrl invalid');
+        // formatChange()
+        console.assert(formatChange(5.3).cls === 'up', 'FAIL: formatChange up');
+        console.assert(formatChange(-2.1).cls === 'down', 'FAIL: formatChange down');
+        console.assert(formatChange(0).cls === 'neutral', 'FAIL: formatChange zero');
+        console.assert(formatChange(null).cls === 'neutral', 'FAIL: formatChange null');
+        console.assert(formatChange(undefined).cls === 'neutral', 'FAIL: formatChange undef');
+        // cacheGet/cacheSet()
+        cacheSet('_test', { a: 1 }, 5000);
+        const testCache = cacheGet('_test');
+        console.assert(testCache && testCache.a === 1, 'FAIL: cache roundtrip');
+        localStorage.removeItem('bigdashimi-cache-_test');
+        console.assert(cacheGet('_nonexistent') === null, 'FAIL: cache miss');
+        console.log('%c✅ Smoke-Tests passed', 'color:#00ff88;font-weight:bold');
+    } catch(e) { console.warn('⚠ Smoke-Test error:', e); }
+
     initWeatherCanvas();
     updateDynamicBackground();
 

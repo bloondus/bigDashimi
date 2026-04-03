@@ -2,11 +2,21 @@
 
 > **All-in-One IT-Dashboard** — 12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei.
 
-![Version](https://img.shields.io/badge/Version-1.5.0-blueviolet) ![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![GitHub Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Version](https://img.shields.io/badge/Version-1.6.0-blueviolet) ![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![GitHub Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## 🚀 Live Demo
 
 **[bloondus.github.io/bigDashimi](https://bloondus.github.io/bigDashimi/dashboard.html)**
+
+## 📸 Preview
+
+<p align="center">
+  <a href="https://bloondus.github.io/bigDashimi/dashboard.html">
+    <img src="https://img.shields.io/badge/▶_Live_Dashboard_öffnen-00d4ff?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj7wn5OKPC90ZXh0Pjwvc3ZnPg==" alt="Dashboard öffnen" height="48">
+  </a>
+</p>
+
+> 💡 **Tipp:** Für den vollen Effekt im Browser `F11` (Fullscreen) drücken!
 
 ## 🖥 Widgets
 
@@ -109,6 +119,7 @@ sw.js                   ← Service Worker (Cache-First)
 
 | Version | Datum | Änderungen |
 |---------|-------|-----------|
+| 1.6.0 | 03.04.2026 | Smoke-Tests, LICENSE, OG Meta-Tags, README Screenshot |
 | 1.5.0 | 03.04.2026 | PWA-Support, Settings Export/Import, Versionsnummer |
 | 1.4.0 | 03.04.2026 | URL-Validation, ARIA + semantisches HTML, Race-Condition-Fix |
 | 1.3.0 | 03.04.2026 | sanitize() überall, prefers-reduced-motion, API-Priorisierung |
