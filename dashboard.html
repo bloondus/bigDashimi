@@ -15,7 +15,8 @@
     <meta property="og:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei. ÖV, Wetter, Aktien, Crypto, News und mehr.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://bloondus.github.io/bigDashimi/dashboard.html">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image" content="https://bloondus.github.io/bigDashimi/screenshot.png">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="bigDashimi — IT Dashboard">
     <meta name="twitter:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei">
     <style>
@@ -498,6 +499,7 @@ button:focus:not(:focus-visible) { outline: none; }
             <div class="status-item"><span class="status-label">Update</span><span class="status-value" id="last-update">--:--</span></div>
             <div class="status-item"><span class="status-label">Stationen</span><span class="status-value" id="station-count">3</span></div>
             <div class="status-item"><span class="status-label">Wetter</span><span class="status-value" id="weather-count">1</span></div>
+            <div class="status-item" id="error-row" style="display:none;"><span class="status-label" style="color:var(--c-danger)">⚠ Fehler</span><span class="status-value" id="dashboard-errors" style="color:var(--c-danger);font-size:0.6rem;"></span></div>
         </div>
     </section>
 
@@ -690,7 +692,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 // ===== bigDashimi - Standalone Dashboard =====
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 
 // ----- Defaults -----
 const DEFAULT_STATIONS = [
@@ -1570,6 +1572,25 @@ async function updateMarketPrices() {
 
     el.innerHTML = html;
 }
+
+// ----- Globaler Error-Handler -----
+const _errors = [];
+window.onerror = function(msg, src, line) {
+    const short = String(msg).slice(0, 60);
+    _errors.push({ time: new Date(), msg: short });
+    console.error('[bigDashimi]', msg, src, line);
+    const row = document.getElementById('error-row');
+    const el = document.getElementById('dashboard-errors');
+    if (row && el) {
+        row.style.display = '';
+        el.textContent = _errors.length + 'x — ' + short;
+        el.title = _errors.map(e => e.time.toLocaleTimeString('de-CH') + ': ' + e.msg).join('\n');
+    }
+};
+window.onunhandledrejection = function(e) {
+    const msg = e.reason ? String(e.reason.message || e.reason).slice(0, 60) : 'Promise rejected';
+    window.onerror(msg, '', 0);
+};
 
 // ----- Init -----
 document.addEventListener('DOMContentLoaded', () => {
