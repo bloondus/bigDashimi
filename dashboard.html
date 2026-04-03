@@ -232,6 +232,13 @@ body {
 .hw-change.down { color: #ff4444; }
 .hw-change.neutral { color: #666; }
 .hw-updated { font-size: 0.5rem; color: #444; text-align: right; margin-top: auto; padding-top: 2px; }
+.hw-range { display: flex; align-items: center; gap: 3px; font-size: 0.5rem; color: #555; padding: 0 6px 1px; }
+.hw-range-bar { flex: 1; height: 3px; background: #1a1a2e; border-radius: 2px; position: relative; max-width: 120px; }
+.hw-range-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff88); }
+.hw-range-dot { position: absolute; top: -2px; width: 7px; height: 7px; border-radius: 50%; background: #fff; border: 1px solid #333; transform: translateX(-50%); }
+.hw-range-label { color: #444; font-variant-numeric: tabular-nums; }
+.hw-sparkline { padding: 0 6px; }
+.hw-sparkline svg { display: block; }
 
 /* === News Ticker === */
 .news-ticker-bar {
@@ -1163,6 +1170,36 @@ async function fetchCrypto() {
     } catch(e) { return null; }
 }
 
+// Crypto 7-Tage Sparkline (CoinGecko market_chart - gratis)
+async function fetchCryptoSparkline(coinId) {
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=7&interval=daily');
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.prices ? data.prices.map(p => p[1]) : null;
+    } catch(e) { return null; }
+}
+
+function buildSparklineSVG(prices, width, height, color) {
+    if (!prices || prices.length < 2) return '';
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+    const points = prices.map((p, i) => {
+        const x = (i / (prices.length - 1)) * width;
+        const y = height - ((p - min) / range) * (height - 2) - 1;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    const first = prices[0], last = prices[prices.length - 1];
+    const lineColor = last >= first ? '#00ff88' : '#ff4444';
+    const fillPts = points.join(' ') + ' ' + width + ',' + height + ' 0,' + height;
+    return '<svg width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '">'
+        + '<defs><linearGradient id="sg' + color + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + lineColor + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + lineColor + '" stop-opacity="0"/></linearGradient></defs>'
+        + '<polygon points="' + fillPts + '" fill="url(#sg' + color + ')"/>'
+        + '<polyline points="' + points.join(' ') + '" fill="none" stroke="' + lineColor + '" stroke-width="1.5" stroke-linejoin="round"/>'
+        + '</svg>';
+}
+
 // Währungskurse (Frankfurter API - gratis, kein Key, unbegrenzt)
 async function fetchCurrencyRates() {
     try {
@@ -1198,7 +1235,11 @@ async function fetchTechStocks() {
             results[q.symbol] = {
                 price: price,
                 currency: q.currencyCode || 'USD',
-                change: changePct
+                change: changePct,
+                yrHi: q.yrhiprice ? parseFloat(q.yrhiprice.replace(/,/g, '')) : null,
+                yrLo: q.yrloprice ? parseFloat(q.yrloprice.replace(/,/g, '')) : null,
+                yrHiDate: q.yrhidate || '',
+                yrLoDate: q.yrlodate || ''
             };
         }
         return Object.keys(results).length > 0 ? results : null;
@@ -1225,11 +1266,13 @@ async function updateMarketPrices() {
     let html = '';
 
     // Alle Daten parallel laden
-    const [stocks, crypto, rates, prevRates] = await Promise.all([
+    const [stocks, crypto, rates, prevRates, btcSparkline, ethSparkline] = await Promise.all([
         fetchTechStocks(),
         fetchCrypto(),
         fetchCurrencyRates(),
-        fetchCurrencyChange()
+        fetchCurrencyChange(),
+        fetchCryptoSparkline('bitcoin'),
+        fetchCryptoSparkline('ethereum')
     ]);
 
     // 1. Halbleiter & Tech-Aktien
@@ -1251,6 +1294,15 @@ async function updateMarketPrices() {
                     + '<span class="hw-price">' + formatPrice(s.price, '$') + '</span>'
                     + '<span class="hw-change ' + ch.cls + '">' + ch.text + '</span>'
                     + '</div>';
+                // 52-Wochen Range Bar
+                if (s.yrLo && s.yrHi && s.yrHi > s.yrLo) {
+                    const pct = ((s.price - s.yrLo) / (s.yrHi - s.yrLo) * 100).toFixed(0);
+                    html += '<div class="hw-range">'
+                        + '<span class="hw-range-label">' + formatPrice(s.yrLo, '$') + '</span>'
+                        + '<div class="hw-range-bar"><div class="hw-range-fill" style="width:100%"></div><div class="hw-range-dot" style="left:' + pct + '%"></div></div>'
+                        + '<span class="hw-range-label">' + formatPrice(s.yrHi, '$') + '</span>'
+                        + '</div>';
+                }
             }
         }
     } else {
@@ -1260,6 +1312,7 @@ async function updateMarketPrices() {
 
     // 2. Crypto (GPU-Markt Indikator)
     html += '<div class="hw-section"><div class="hw-section-title">₿ Crypto (GPU-Nachfrage Indikator)</div>';
+    const sparklines = { bitcoin: btcSparkline, ethereum: ethSparkline };
     if (crypto) {
         const coins = [
             { key: 'bitcoin', name: 'Bitcoin', icon: '₿' },
@@ -1274,6 +1327,10 @@ async function updateMarketPrices() {
                     + '<span class="hw-price">' + formatPrice(c.usd, '$') + '</span>'
                     + '<span class="hw-change ' + ch24.cls + '">' + ch24.text + '</span>'
                     + '</div>';
+                // 7-Tage Sparkline
+                if (sparklines[coin.key]) {
+                    html += '<div class="hw-sparkline">' + buildSparklineSVG(sparklines[coin.key], 160, 20, coin.key) + '</div>';
+                }
             }
         }
     } else {
