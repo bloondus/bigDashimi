@@ -79,8 +79,8 @@ body {
 
 /* Widgets */
 .widget {
-    background: linear-gradient(145deg, rgba(18,18,42,0.88), rgba(26,26,53,0.88));
-    backdrop-filter: blur(4px);
+    background: linear-gradient(145deg, rgba(18,18,42,0.75), rgba(26,26,53,0.75));
+    backdrop-filter: blur(6px);
     border: 1px solid #2a2a4a;
     border-radius: 12px;
     padding: 10px 12px;
@@ -936,19 +936,26 @@ let currentWeatherCode = 0;
 function getTimeOfDayTheme() {
     const h = new Date().getHours();
     // Nacht: 22-5, Dämmerung: 5-7 & 19-22, Tag: 7-17, Abend: 17-19
-    if (h >= 5 && h < 7)   return { bg: 'linear-gradient(135deg, #0d1b2a, #1b2838, #2a4a6b)', header: 'rgba(13,27,42,0.92)', label: 'Morgendämmerung' };
-    if (h >= 7 && h < 10)  return { bg: 'linear-gradient(135deg, #1a1a2e, #16213e, #1a3a5c)', header: 'rgba(22,33,62,0.92)', label: 'Morgen' };
-    if (h >= 10 && h < 15) return { bg: 'linear-gradient(135deg, #0f1923, #162032, #1a2a44)', header: 'rgba(15,25,35,0.92)', label: 'Mittag' };
-    if (h >= 15 && h < 17) return { bg: 'linear-gradient(135deg, #141824, #1a2030, #1e2a3e)', header: 'rgba(20,24,36,0.92)', label: 'Nachmittag' };
-    if (h >= 17 && h < 19) return { bg: 'linear-gradient(135deg, #1a1020, #2a1a2e, #3a2040)', header: 'rgba(42,26,46,0.92)', label: 'Abend' };
-    if (h >= 19 && h < 22) return { bg: 'linear-gradient(135deg, #0d0d1a, #15102a, #1a1030)', header: 'rgba(13,13,26,0.92)', label: 'Abenddämmerung' };
-    return { bg: 'linear-gradient(135deg, #05050e, #0a0a18, #0d0d22)', header: 'rgba(5,5,14,0.92)', label: 'Nacht' };
+    if (h >= 5 && h < 7)   return { bg: 'linear-gradient(135deg, #0c1445, #1a3a6b, #3a6090, #d4a574)', header: 'rgba(26,58,107,0.88)', label: 'Morgendämmerung' };
+    if (h >= 7 && h < 10)  return { bg: 'linear-gradient(135deg, #1a3355, #2a5080, #4a7ab0, #87CEEB)', header: 'rgba(42,80,128,0.88)', label: 'Morgen' };
+    if (h >= 10 && h < 15) return { bg: 'linear-gradient(135deg, #1a4a7a, #2a6aaa, #4a90d0, #6ab0e8)', header: 'rgba(42,106,170,0.88)', label: 'Mittag' };
+    if (h >= 15 && h < 17) return { bg: 'linear-gradient(135deg, #1a3d6d, #2a5a90, #4a80b8, #5a95cc)', header: 'rgba(42,90,144,0.88)', label: 'Nachmittag' };
+    if (h >= 17 && h < 19) return { bg: 'linear-gradient(135deg, #1a1040, #3a1a50, #6a3070, #d4726a)', header: 'rgba(58,26,80,0.88)', label: 'Abend' };
+    if (h >= 19 && h < 22) return { bg: 'linear-gradient(135deg, #0a0a25, #151040, #1e1555, #2a1a6a)', header: 'rgba(21,16,64,0.88)', label: 'Abenddämmerung' };
+    return { bg: 'linear-gradient(135deg, #020210, #060620, #0a0a35, #0e0e45)', header: 'rgba(6,6,32,0.88)', label: 'Nacht' };
 }
 
 function updateDynamicBackground() {
     const theme = getTimeOfDayTheme();
     document.body.style.background = theme.bg;
     document.querySelector('.dashboard-header').style.background = theme.header;
+    // Tageszeit-Label im Datum anzeigen
+    const dateEl = document.querySelector('.header-date');
+    if (dateEl) {
+        const now = new Date();
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        dateEl.textContent = now.toLocaleDateString('de-CH', opts) + ' · ' + theme.label;
+    }
 }
 
 // ===== WETTER-ANIMATIONEN (Canvas) =====
@@ -1103,6 +1110,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateQuote, CONFIG.quoteInterval);
     // Hintergrund alle 5 Min aktualisieren (sanfter Tageszeit-Wechsel)
     setInterval(updateDynamicBackground, 5 * 60 * 1000);
+
+    // Kurze Demo-Animation beim Start (3s Regen), damit man sieht dass es funktioniert
+    if (!currentWeatherCode || currentWeatherCode <= 3) {
+        setTimeout(() => {
+            spawnParticles('rain', 80);
+            animateWeatherParticles();
+            setTimeout(() => {
+                if (currentWeatherCode <= 3) {
+                    cancelAnimationFrame(weatherCanvas.animId);
+                    weatherCanvas.particles = [];
+                    weatherCanvas.ctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+                }
+            }, 3000);
+        }, 1500);
+    }
 });
 </script>
 </body>
