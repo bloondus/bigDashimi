@@ -1,11 +1,11 @@
-// bigDashimi Service Worker – Cache-First mit Network-Fallback
-const CACHE_NAME = 'bigdashimi-v1.7.1';
+// bigDashimi Service Worker – Network-First (immer aktuell, Offline-Fallback)
+const CACHE_NAME = 'bigdashimi-v1.8.0';
 const ASSETS = [
     '/bigDashimi/dashboard.html',
     '/bigDashimi/manifest.json',
 ];
 
-// Install: Statische Assets cachen
+// Install: Assets vorab cachen + sofort aktivieren
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
     );
 });
 
-// Activate: Alte Caches löschen
+// Activate: Alle alten Caches löschen + sofort übernehmen
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -23,29 +23,19 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch: Cache-First für eigene Assets, Network-First für APIs
+// Fetch: Network-First für alles (Cache nur als Offline-Fallback)
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    // Eigene Assets: Cache-First
-    if (url.origin === self.location.origin) {
-        event.respondWith(
-            caches.match(event.request).then(cached => {
-                const fetchPromise = fetch(event.request).then(response => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                    }
-                    return response;
-                }).catch(() => cached);
-                return cached || fetchPromise;
-            })
-        );
-        return;
-    }
-
-    // Externe APIs: Network-First (kein Caching im SW, wird in-App gecacht)
     event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
+        fetch(event.request).then(response => {
+            // Erfolgreiche Antwort → im Cache aktualisieren
+            if (response.ok) {
+                const clone = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            }
+            return response;
+        }).catch(() => {
+            // Offline → aus Cache liefern
+            return caches.match(event.request);
+        })
     );
 });
