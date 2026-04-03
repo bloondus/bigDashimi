@@ -290,6 +290,15 @@ body {
     100% { transform: translateX(-100%); }
 }
 
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .news-ticker-content { animation: none !important; }
+    #weather-canvas { display: none !important; }
+    .lightning-flash { display: none !important; }
+    .status-dot { animation: none !important; }
+    * { transition-duration: 0s !important; }
+}
+
 /* Loading & Error */
 .loading { color: var(--c-text-faint); font-style: italic; text-align: center; padding: 15px; font-size: 0.8rem; }
 .error { color: var(--c-danger); font-size: 0.8rem; }
@@ -765,7 +774,7 @@ function switchTab(tab) {
 function renderStationList() {
     const list = document.getElementById('station-list');
     if (CONFIG.oevStations.length === 0) { list.innerHTML = '<div class="loading">Keine Stationen</div>'; return; }
-    list.innerHTML = CONFIG.oevStations.map((s, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🚏 ' + s.name + '</span><span class="settings-station-query">' + s.query + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveStation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveStation(' + i + ',1)" ' + (i === CONFIG.oevStations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeStation(' + i + ')">✕</button></div></div>').join('');
+    list.innerHTML = CONFIG.oevStations.map((s, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🚏 ' + sanitize(s.name) + '</span><span class="settings-station-query">' + sanitize(s.query) + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveStation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveStation(' + i + ',1)" ' + (i === CONFIG.oevStations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeStation(' + i + ')">✕</button></div></div>').join('');
     updateStationCount();
 }
 function addStation() { const input = document.getElementById('new-station-input'); const val = input.value.trim(); if (!val) return; CONFIG.oevStations.push({ name: val, query: val }); saveStations(); input.value = ''; renderStationList(); }
@@ -778,7 +787,7 @@ function updateStationCount() { const el = document.getElementById('station-coun
 function renderWeatherLocationList() {
     const container = document.getElementById('weather-settings-content');
     const items = CONFIG.weatherLocations.length === 0 ? '<div class="loading">Keine Standorte</div>'
-        : CONFIG.weatherLocations.map((w, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + w.city + '</span><span class="settings-station-query">' + w.lat.toFixed(4) + ', ' + w.lon.toFixed(4) + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveWeatherLocation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveWeatherLocation(' + i + ',1)" ' + (i === CONFIG.weatherLocations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeWeatherLocation(' + i + ')">✕</button></div></div>').join('');
+        : CONFIG.weatherLocations.map((w, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + sanitize(w.city) + '</span><span class="settings-station-query">' + w.lat.toFixed(4) + ', ' + w.lon.toFixed(4) + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveWeatherLocation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveWeatherLocation(' + i + ',1)" ' + (i === CONFIG.weatherLocations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeWeatherLocation(' + i + ')">✕</button></div></div>').join('');
     container.innerHTML = '<div class="settings-add"><input type="text" id="weather-city-input" placeholder="Stadt suchen..." onkeydown="if(event.key===\'Enter\') searchWeatherCity()"><button class="btn-add" onclick="searchWeatherCity()">🔍 Suchen</button></div><div id="weather-search-results"></div><div class="settings-section-title">📍 Aktive Standorte (' + CONFIG.weatherLocations.length + ')</div><div class="settings-station-list">' + items + '</div>';
     updateWeatherCount();
 }
@@ -789,7 +798,7 @@ async function searchWeatherCity() {
         const res = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(query) + '&count=5&language=de');
         const data = await res.json();
         if (!data.results || data.results.length === 0) { el.innerHTML = '<div class="error" style="padding:10px 18px">⚠ Keine Stadt gefunden</div>'; return; }
-        el.innerHTML = '<div class="settings-section-title">🔍 Klicke zum Hinzufügen</div>' + data.results.map((r, i) => '<div class="settings-station-item weather-result" onclick="addWeatherLocation(' + i + ')"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + r.name + '</span><span class="settings-station-query">' + (r.admin1 || '') + ' ' + (r.country || '') + '</span></div><span style="color:#00d4ff;font-size:1.2rem;">+</span></div>').join('');
+        el.innerHTML = '<div class="settings-section-title">🔍 Klicke zum Hinzufügen</div>' + data.results.map((r, i) => '<div class="settings-station-item weather-result" onclick="addWeatherLocation(' + i + ')"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + sanitize(r.name) + '</span><span class="settings-station-query">' + sanitize(r.admin1 || '') + ' ' + sanitize(r.country || '') + '</span></div><span style="color:var(--c-primary);font-size:1.2rem;">+</span></div>').join('');
         window._weatherResults = data.results;
     } catch(e) { el.innerHTML = '<div class="error" style="padding:10px 18px">⚠ Suche fehlgeschlagen</div>'; }
 }
@@ -815,7 +824,7 @@ function resetSpotify() { CONFIG.spotifyUrl = DEFAULT_SPOTIFY_URL; localStorage.
 function renderCountdownSettings() {
     const list = document.getElementById('cd-settings-list');
     if (CONFIG.countdowns.length === 0) { list.innerHTML = '<div class="loading">Keine Events</div>'; return; }
-    list.innerHTML = CONFIG.countdowns.map((c, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">' + c.name + '</span><span class="settings-station-query">' + new Date(c.date).toLocaleDateString('de-CH') + '</span></div><div class="settings-station-actions"><button class="btn-delete" onclick="removeCountdown(' + i + ')">✕</button></div></div>').join('');
+    list.innerHTML = CONFIG.countdowns.map((c, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">' + sanitize(c.name) + '</span><span class="settings-station-query">' + new Date(c.date).toLocaleDateString('de-CH') + '</span></div><div class="settings-station-actions"><button class="btn-delete" onclick="removeCountdown(' + i + ')">✕</button></div></div>').join('');
 }
 function addCountdown() {
     const name = document.getElementById('cd-name-input').value.trim();
@@ -843,7 +852,7 @@ function updateClock() {
 // ----- Wetter -----
 async function fetchWeather(loc) { try { const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat + '&longitude=' + loc.lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1'); if (!res.ok) return null; return await res.json(); } catch(e) { return null; } }
 function renderWeatherCard(data, cityName) {
-    if (!data || !data.current) return '<div class="weather-section"><div class="weather-city-header">🏙 ' + cityName + '</div><div class="error">⚠ Nicht verfügbar</div></div>';
+    if (!data || !data.current) return '<div class="weather-section"><div class="weather-city-header">🏙 ' + sanitize(cityName) + '</div><div class="error">⚠ Nicht verfügbar</div></div>';
     const c = data.current;
     let sunInfo = '';
     if (data.daily && data.daily.sunrise && data.daily.sunset) {
@@ -851,7 +860,7 @@ function renderWeatherCard(data, cityName) {
         const ss = new Date(data.daily.sunset[0]).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
         sunInfo = '<span>🌅 ' + sr + '</span><span>🌇 ' + ss + '</span>';
     }
-    return '<div class="weather-section"><div class="weather-city-header">🏙 ' + cityName + '</div><div class="weather-main"><div class="weather-icon">' + getWeatherEmoji(c.weather_code) + '</div><div><div class="weather-temp">' + Math.round(c.temperature_2m) + '°</div><div class="weather-desc">' + getWeatherDescription(c.weather_code) + '</div></div></div><div class="weather-details"><span>💧 ' + c.relative_humidity_2m + '%</span><span>🌬 ' + Math.round(c.wind_speed_10m) + ' km/h</span><span>🌡 Gefühlt ' + Math.round(c.apparent_temperature) + '°</span>' + sunInfo + '</div></div>';
+    return '<div class="weather-section"><div class="weather-city-header">🏙 ' + sanitize(cityName) + '</div><div class="weather-main"><div class="weather-icon">' + getWeatherEmoji(c.weather_code) + '</div><div><div class="weather-temp">' + Math.round(c.temperature_2m) + '°</div><div class="weather-desc">' + sanitize(getWeatherDescription(c.weather_code)) + '</div></div></div><div class="weather-details"><span>💧 ' + c.relative_humidity_2m + '%</span><span>🌬 ' + Math.round(c.wind_speed_10m) + ' km/h</span><span>🌡 Gefühlt ' + Math.round(c.apparent_temperature) + '°</span>' + sunInfo + '</div></div>';
 }
 async function updateWeather() {
     const el = document.getElementById('weather-content');
@@ -871,9 +880,9 @@ function getWeatherDescription(code) { const d = { 0:'Klar', 1:'Überwiegend kla
 // ----- ÖV Abfahrten -----
 async function fetchStation(station) { try { const res = await fetch('https://fahrplan.search.ch/api/stationboard.json?stop=' + encodeURIComponent(station.query) + '&limit=' + CONFIG.oevLimit); if (!res.ok) return null; const data = await res.json(); return { station: data.stop ? { name: data.stop.name } : null, stationboard: (data.connections || []).map(c => ({ category: c['*G'] || c.type || '', number: c.line || c['*L'] || '?', name: c.line || '', to: c.terminal ? c.terminal.name : '?', stop: { departure: c.time } })) }; } catch(e) { return null; } }
 function renderDepartures(data, stationName) {
-    if (!data || !data.stationboard || data.stationboard.length === 0) return '<div class="station-section"><div class="station-header">🚏 ' + stationName + '</div><div class="loading">Keine Abfahrten</div></div>';
-    const rows = data.stationboard.map(dep => { const depTime = new Date(dep.stop.departure); const diffMin = Math.round((depTime - new Date()) / 60000); const timeStr = depTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); const cat = (dep.category || '').toUpperCase(); let lineClass = ''; if (cat === 'B' || cat === 'BUS' || cat === 'NFB') lineClass = 'bus'; if (cat === 'T' || cat === 'TRAM' || cat === 'NFT') lineClass = 'tram'; const line = dep.number || dep.name || '?'; const countdown = diffMin <= 0 ? 'jetzt' : diffMin + "'"; return '<div class="departure-item"><span class="dep-line ' + lineClass + '">' + line + '</span><span class="dep-destination">' + dep.to + '</span><span class="dep-time">' + timeStr + '</span><span class="dep-countdown">' + countdown + '</span></div>'; }).join('');
-    return '<div class="station-section"><div class="station-header">🚏 ' + (data.station ? data.station.name : stationName) + '</div>' + rows + '</div>';
+    if (!data || !data.stationboard || data.stationboard.length === 0) return '<div class="station-section"><div class="station-header">🚏 ' + sanitize(stationName) + '</div><div class="loading">Keine Abfahrten</div></div>';
+    const rows = data.stationboard.map(dep => { const depTime = new Date(dep.stop.departure); const diffMin = Math.round((depTime - new Date()) / 60000); const timeStr = depTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); const cat = (dep.category || '').toUpperCase(); let lineClass = ''; if (cat === 'B' || cat === 'BUS' || cat === 'NFB') lineClass = 'bus'; if (cat === 'T' || cat === 'TRAM' || cat === 'NFT') lineClass = 'tram'; const line = dep.number || dep.name || '?'; const countdown = diffMin <= 0 ? 'jetzt' : diffMin + "'"; return '<div class="departure-item"><span class="dep-line ' + lineClass + '">' + sanitize(String(line)) + '</span><span class="dep-destination">' + sanitize(dep.to) + '</span><span class="dep-time">' + timeStr + '</span><span class="dep-countdown">' + countdown + '</span></div>'; }).join('');
+    return '<div class="station-section"><div class="station-header">🚏 ' + sanitize(data.station ? data.station.name : stationName) + '</div>' + rows + '</div>';
 }
 async function updateDepartures() { const el = document.getElementById('departures-list'); try { const results = await Promise.all(CONFIG.oevStations.map(s => fetchStation(s))); let html = ''; CONFIG.oevStations.forEach((s, i) => { html += renderDepartures(results[i], s.name); }); el.innerHTML = html; } catch(e) { el.innerHTML = '<div class="error">⚠ ÖV nicht verfügbar</div>'; } }
 
@@ -920,12 +929,12 @@ async function updateQuote() {
         const res = await fetch('https://api.quotable.io/random?maxLength=120');
         if (res.ok) {
             const data = await res.json();
-            el.innerHTML = '<div class="quote-text">«' + data.content + '»</div><div class="quote-author">— ' + data.author + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
+            el.innerHTML = '<div class="quote-text">«' + sanitize(data.content) + '»</div><div class="quote-author">— ' + sanitize(data.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
             return;
         }
     } catch(e) {}
     const q = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
-    el.innerHTML = '<div class="quote-text">«' + q.text + '»</div><div class="quote-author">— ' + q.author + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
+    el.innerHTML = '<div class="quote-text">«' + sanitize(q.text) + '»</div><div class="quote-author">— ' + sanitize(q.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
 }
 
 // ----- Countdown -----
@@ -943,7 +952,7 @@ function updateCountdown() {
         else if (diff <= 3) { val = diff + ' Tag' + (diff !== 1 ? 'e' : ''); cls = 'urgent'; }
         else if (diff <= 30) { val = diff + ' Tage'; cls = ''; }
         else { const m = Math.floor(diff / 30); val = m + ' Monat' + (m !== 1 ? 'e' : '') + ' ' + (diff % 30) + 'd'; cls = ''; }
-        return '<div class="countdown-item"><span class="countdown-label">' + c.name + '</span><span class="countdown-value ' + cls + '">' + val + '</span></div>';
+        return '<div class="countdown-item"><span class="countdown-label">' + sanitize(c.name) + '</span><span class="countdown-value ' + cls + '">' + val + '</span></div>';
     }).join('');
 }
 
@@ -1465,11 +1474,37 @@ async function updateMarketPrices() {
 document.addEventListener('DOMContentLoaded', () => {
     initWeatherCanvas();
     updateDynamicBackground();
-    updateClock(); updateWeather(); updateDepartures(); updateCalendar(); updateSpotify();
-    updateStatus(); updateStationCount(); updateWeatherCount();
-    updateQuote(); updateCountdown(); updateMoon(); updateMap(); initNotes(); updateNews();
-    updateMarketPrices();
 
+    // Priorität 1: Sofort (lokal, kein API-Call)
+    updateClock();
+    updateStationCount();
+    updateWeatherCount();
+    updateCountdown();
+    updateMoon();
+    initNotes();
+
+    // Priorität 2: Nach 100ms (wichtige Live-Daten)
+    setTimeout(() => {
+        updateWeather();
+        updateDepartures();
+        updateStatus();
+    }, 100);
+
+    // Priorität 3: Nach 500ms (kann warten)
+    setTimeout(() => {
+        updateMarketPrices();
+        updateNews();
+        updateQuote();
+    }, 500);
+
+    // Priorität 4: Nach 1s (iframes, schwere Loads)
+    setTimeout(() => {
+        updateCalendar();
+        updateSpotify();
+        updateMap();
+    }, 1000);
+
+    // Intervalle
     setInterval(updateClock, CONFIG.clockInterval);
     setInterval(() => { updateWeather(); updateStatus(); }, CONFIG.weatherInterval);
     setInterval(() => { updateDepartures(); updateStatus(); }, CONFIG.oevInterval);
@@ -1477,17 +1512,43 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateNews, CONFIG.newsInterval);
     setInterval(updateQuote, CONFIG.quoteInterval);
     setInterval(updateMarketPrices, 10 * 60 * 1000);
-    // Hintergrund alle 5 Min aktualisieren (sanfter Tageszeit-Wechsel)
     setInterval(updateDynamicBackground, 5 * 60 * 1000);
 
-    // Kurze Demo-Animation beim Start (3s Regen), damit man sieht dass es funktioniert
-    if (!currentWeatherCode || currentWeatherCode <= 3) {
+    // Tab-Visibility: Canvas pausieren wenn Tab nicht sichtbar
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (weatherCanvas.animId) {
+                cancelAnimationFrame(weatherCanvas.animId);
+                weatherCanvas.animId = null;
+            }
+            if (window._lightningInterval) {
+                clearInterval(window._lightningInterval);
+                window._lightningInterval = null;
+            }
+        } else {
+            if (weatherCanvas.particles && weatherCanvas.particles.length > 0 && !weatherCanvas.animId) {
+                animateWeatherParticles();
+            }
+            if (currentWeatherCode >= 95 && currentWeatherCode <= 99) {
+                window._lightningInterval = setInterval(() => {
+                    if (Math.random() < 0.4) triggerLightning();
+                }, 3000);
+            }
+            updateDynamicBackground();
+            updateClock();
+        }
+    });
+
+    // Demo-Regen nur wenn kein echtes Wetter und reduced-motion nicht aktiv
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion && (!currentWeatherCode || currentWeatherCode <= 3)) {
         setTimeout(() => {
             spawnParticles('rain', 80);
             animateWeatherParticles();
             setTimeout(() => {
                 if (currentWeatherCode <= 3) {
                     cancelAnimationFrame(weatherCanvas.animId);
+                    weatherCanvas.animId = null;
                     weatherCanvas.particles = [];
                     weatherCanvas.ctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
                 }
