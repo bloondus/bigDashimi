@@ -692,7 +692,7 @@ button:focus:not(:focus-visible) { outline: none; }
 
 <script>
 // ===== bigDashimi - Standalone Dashboard =====
-const VERSION = '1.8.0';
+const VERSION = '1.8.1';
 
 // ----- Defaults -----
 const DEFAULT_STATIONS = [
@@ -1027,10 +1027,10 @@ const FALLBACK_QUOTES = [
 async function updateQuote() {
     const el = document.getElementById('quote-content');
     try {
-        const res = await fetch('https://api.quotable.io/random?maxLength=120');
+        const res = await fetch('https://dummyjson.com/quotes/random');
         if (res.ok) {
             const data = await res.json();
-            el.innerHTML = '<div class="quote-text">«' + sanitize(data.content) + '»</div><div class="quote-author">— ' + sanitize(data.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
+            el.innerHTML = '<div class="quote-text">«' + sanitize(data.quote) + '»</div><div class="quote-author">— ' + sanitize(data.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
             return;
         }
     } catch(e) {}

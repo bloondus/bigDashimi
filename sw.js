@@ -1,5 +1,5 @@
 // bigDashimi Service Worker – Network-First (immer aktuell, Offline-Fallback)
-const CACHE_NAME = 'bigdashimi-v1.8.0';
+const CACHE_NAME = 'bigdashimi-v1.8.1';
 const ASSETS = [
     '/bigDashimi/dashboard.html',
     '/bigDashimi/manifest.json',
@@ -34,8 +34,10 @@ self.addEventListener('fetch', event => {
             }
             return response;
         }).catch(() => {
-            // Offline → aus Cache liefern
-            return caches.match(event.request);
+            // Offline → aus Cache liefern, sonst Netzwerkfehler
+            return caches.match(event.request).then(cached => {
+                return cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+            });
         })
     );
 });
