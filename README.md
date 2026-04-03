@@ -1,90 +1,121 @@
 # 📊 bigDashimi
 
-Dunkles Dashboard als GitHub Pages Seite – zeigt **Uhrzeit**, **Wetter**, **ÖV-Abfahrten** und mehr.
+> **All-in-One IT-Dashboard** — 12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei.
 
-![Dashboard](https://img.shields.io/badge/Status-Live-brightgreen) ![GitHub Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue)
+![Version](https://img.shields.io/badge/Version-1.5.0-blueviolet) ![Status](https://img.shields.io/badge/Status-Live-brightgreen) ![GitHub Pages](https://img.shields.io/badge/Hosted-GitHub%20Pages-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## 🚀 Live aufrufen
+## 🚀 Live Demo
 
-Nach dem Deployment erreichbar unter:
-```
-https://DEIN-USERNAME.github.io/bigDashimi/
-```
+**[bloondus.github.io/bigDashimi](https://bloondus.github.io/bigDashimi/dashboard.html)**
+
+## 🖥 Widgets
+
+| Widget | Beschreibung | API |
+|--------|-------------|-----|
+| 🚉 **ÖV Abfahrten** | Live-Abfahrten mit Bus/Tram-Labels | [search.ch](https://fahrplan.search.ch) |
+| 🌤 **Wetter** | Mehrere Standorte, Sonnenauf/-untergang | [Open-Meteo](https://open-meteo.com) |
+| 📅 **Kalender** | Google Calendar Embed (Dark Mode) | Google Calendar |
+| 💰 **Markt & Hardware** | Halbleiter-Aktien (52W-Range) + Crypto (Sparklines) + Währungen | [CNBC](https://quote.cnbc.com) · [CoinGecko](https://coingecko.com) · [Frankfurter](https://frankfurter.dev) |
+| 📰 **News Ticker** | Heise, Golem, Hardwareluxx (RSS) | CORS-Proxy |
+| 🎵 **Spotify** | Playlist/Album einbetten | Spotify Embed |
+| 🌙 **Mondphase** | Phase, Beleuchtung, Zyklustag | Berechnung (lokal) |
+| 🗣️ **Zitat** | Tägliches Zitat mit Fallback | [Quotable](https://quotable.io) |
+| ⏱️ **Countdown** | Events mit Tage-Countdown | Lokal |
+| 📝 **Notizen** | Auto-Save Notizblock | localStorage |
+| 📡 **Speed Test** | Download-Speed & Ping | Cloudflare |
+| 🗺️ **Karte** | OpenStreetMap Embed | OSM |
+
+## ✨ Features
+
+- 🎨 **Dynamischer Hintergrund** — Farbverlauf ändert sich mit der Tageszeit
+- 🌧 **Wetter-Animationen** — Regen, Schnee, Nebel, Gewitter auf Canvas
+- 📊 **Sparkline-Charts** — 7-Tage-Trend für Bitcoin & Ethereum
+- 📈 **52-Wochen-Range** — Visuelle Balken für Aktien
+- 🔒 **XSS-Schutz** — `sanitize()` + URL-Validation mit Host-Allowlist
+- ♿ **Accessibility** — ARIA-Labels, semantisches HTML, `prefers-reduced-motion`, Focus-Visible
+- 💾 **API-Caching** — localStorage mit TTL (5–30 Min pro Endpoint)
+- ⚡ **Priorisiertes Laden** — P1 sofort → P4 nach 1s (kein API-Stau)
+- 🔄 **Tab-Visibility** — Canvas pausiert bei verstecktem Tab
+- 📱 **Responsive** — Desktop, Tablet, Mobile
+- 📦 **PWA** — Installierbar als App, Offline-Support
+- 💾 **Settings Export/Import** — Einstellungen als JSON sichern & wiederherstellen
 
 ## ⚙️ Einrichtung
 
-### 1. Repository auf GitHub erstellen
+### 1. Repository klonen & deployen
 
 ```bash
-cd my-github-pages-site
-git init
-git add .
-git commit -m "bigDashimi Dashboard"
-git branch -M main
-git remote add origin https://github.com/DEIN-USERNAME/bigDashimi.git
-git push -u origin main
+git clone https://github.com/bloondus/bigDashimi.git
+cd bigDashimi/my-github-pages-site
 ```
 
 ### 2. GitHub Pages aktivieren
 
-1. Gehe zu **Settings** → **Pages** in deinem Repository
-2. Unter **Source** wähle: **Deploy from a branch**
+1. **Settings** → **Pages**
+2. Source: **Deploy from a branch**
 3. Branch: `main` / Ordner: `/ (root)`
-4. **Save** klicken
-5. Nach ~1 Minute ist dein Dashboard live! 🎉
+4. **Save** → nach ~1 Minute live 🎉
 
-### 3. Wetter-API einrichten (optional)
+### 3. Konfigurieren
 
-1. Gratis API Key holen: [openweathermap.org/api](https://openweathermap.org/api)
-2. In `assets/js/main.js` den Key eintragen:
-   ```js
-   weatherApiKey: 'DEIN_API_KEY',
-   ```
+Alles läuft ohne API-Keys. Einstellungen direkt im Dashboard über ⚙️:
 
-### 4. ÖV-Station ändern
+- **ÖV-Stationen** hinzufügen/entfernen
+- **Wetter-Standorte** suchen & hinzufügen
+- **Google Calendar** ID eintragen
+- **Spotify** Playlist-Link einfügen
+- **Countdown** Events verwalten
+- **Settings** exportieren/importieren als JSON
 
-In `assets/js/main.js` die Station anpassen:
-```js
-oevStation: 'Bern',        // oder 'Basel SBB', 'Luzern', etc.
-```
+## 🖥 Kiosk-Modus (TV/Monitor)
 
-## 📁 Projektstruktur
-
-```
-├── _config.yml          # Jekyll Konfiguration
-├── _layouts/default.html # Seiten-Template
-├── _includes/
-│   ├── header.html      # Dashboard-Header mit Uhr
-│   └── footer.html      # (minimiert)
-├── assets/
-│   ├── css/style.css    # Dunkles Dashboard-Design
-│   └── js/main.js       # API-Anbindung (Wetter, ÖV)
-├── index.html           # Dashboard mit Widgets
-└── README.md
-```
-
-## 🖥 Fullscreen-Kiosk Modus
-
-Für ein TV/Monitor-Dashboard:
-
-**Browser:** `F11` drücken
-
-**Linux Autostart:**
 ```bash
-chromium-browser --kiosk https://DEIN-USERNAME.github.io/bigDashimi/
+# Linux
+chromium-browser --kiosk https://bloondus.github.io/bigDashimi/dashboard.html
+
+# Windows
+start chrome --kiosk https://bloondus.github.io/bigDashimi/dashboard.html
+
+# macOS
+open -a "Google Chrome" --args --kiosk https://bloondus.github.io/bigDashimi/dashboard.html
 ```
 
-**Windows:**
-```cmd
-start chrome --kiosk https://DEIN-USERNAME.github.io/bigDashimi/
+## 📁 Architektur
+
+```
+dashboard.html          ← Standalone Dashboard (alles in einer Datei)
+├── <style>             ← CSS Variables, Grid, Responsive, Accessibility
+├── <body>              ← Semantisches HTML (main, section, footer)
+└── <script>            ← 7 APIs, Caching, Canvas, Settings, PWA
+manifest.json           ← PWA-Manifest
+sw.js                   ← Service Worker (Cache-First)
 ```
 
-## 🛠 Features
+**Kein Build-Step. Kein Framework. Kein API-Key. Einfach öffnen.**
 
-- 🕐 Echtzeit-Uhr und Datum
-- 🌤 Wetter (OpenWeatherMap API)
-- 🚉 ÖV-Abfahrten (transport.opendata.ch – Schweiz)
-- 📊 Status-Übersicht
-- 🌙 Dunkles Design
-- 📱 Responsive (Desktop, Tablet, Mobile)
-- ♻️ Auto-Refresh alle 5 Minuten
+## 🔧 Tech Stack
+
+| Technologie | Verwendung |
+|-------------|------------|
+| Vanilla HTML/CSS/JS | Kein Framework |
+| CSS Custom Properties | 24 Design-Tokens |
+| Canvas API | Wetter-Animationen |
+| SVG | Sparkline-Charts |
+| localStorage | Settings + API-Cache |
+| Service Worker | Offline-Support |
+| CORS-Proxy-Kette | RSS-Feeds (codetabs → allorigins) |
+
+## 📜 Changelog
+
+| Version | Datum | Änderungen |
+|---------|-------|-----------|
+| 1.5.0 | 03.04.2026 | PWA-Support, Settings Export/Import, Versionsnummer |
+| 1.4.0 | 03.04.2026 | URL-Validation, ARIA + semantisches HTML, Race-Condition-Fix |
+| 1.3.0 | 03.04.2026 | sanitize() überall, prefers-reduced-motion, API-Priorisierung |
+| 1.2.0 | 03.04.2026 | CSS Variables, XSS-Schutz, API-Caching |
+| 1.1.0 | 03.04.2026 | Sparklines, 52W-Range, CNBC API, Frankfurter Fix |
+| 1.0.0 | 03.04.2026 | Initial Release |
+
+---
+
+Made with ☕ by [bloondus](https://github.com/bloondus)

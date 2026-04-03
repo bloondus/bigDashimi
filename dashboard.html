@@ -6,6 +6,11 @@
     <meta http-equiv="refresh" content="300">
     <title>📊 bigDashimi</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="All-in-One IT-Dashboard: 12 Widgets, 7 APIs, 0 API-Keys">
     <style>
 /* ===== CSS VARIABLES ===== */
 :root {
@@ -482,6 +487,7 @@ button:focus:not(:focus-visible) { outline: none; }
         </div>
         <div class="status-compact">
             <div class="status-item"><span class="status-label"><span class="status-dot"></span>Dashboard</span><span class="status-value">Online</span></div>
+            <div class="status-item"><span class="status-label">Version</span><span class="status-value" id="version-display">--</span></div>
             <div class="status-item"><span class="status-label">Update</span><span class="status-value" id="last-update">--:--</span></div>
             <div class="status-item"><span class="status-label">Stationen</span><span class="status-value" id="station-count">3</span></div>
             <div class="status-item"><span class="status-label">Wetter</span><span class="status-value" id="weather-count">1</span></div>
@@ -590,6 +596,7 @@ button:focus:not(:focus-visible) { outline: none; }
             <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')" role="tab" aria-selected="false">📅 Kalender</button>
             <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')" role="tab" aria-selected="false">🎵 Spotify</button>
             <button class="settings-tab" data-tab="countdown" onclick="switchTab('countdown')" role="tab" aria-selected="false">⏱️ Countdown</button>
+            <button class="settings-tab" data-tab="data" onclick="switchTab('data')" role="tab" aria-selected="false">💾 Daten</button>
         </div>
         <div id="tab-stations">
             <div class="settings-add">
@@ -656,11 +663,25 @@ button:focus:not(:focus-visible) { outline: none; }
                 <button class="btn-apply" onclick="closeSettings()">✓ Fertig</button>
             </div>
         </div>
+        <div id="tab-data" style="display:none;">
+            <div class="settings-info-box">
+                <p>💾 Einstellungen sichern & wiederherstellen</p>
+                <p style="color:#888;font-size:0.8rem;margin-top:6px">Exportiere alle Einstellungen als JSON-Datei oder importiere eine vorhandene Sicherung.</p>
+            </div>
+            <div style="padding:10px 18px;display:flex;gap:10px;flex-direction:column;">
+                <button class="btn-apply" onclick="exportSettings()" style="width:100%;">📤 Einstellungen exportieren (JSON)</button>
+                <label class="btn-reset" style="width:100%;text-align:center;cursor:pointer;">
+                    📥 Einstellungen importieren
+                    <input type="file" accept=".json" onchange="importSettings(event)" style="display:none;">
+                </label>
+                <button class="btn-delete" onclick="resetAllSettings()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--c-danger);background:transparent;color:var(--c-danger);cursor:pointer;margin-top:10px;">⚠ Alle Einstellungen zurücksetzen</button>
+            </div>
+            <div style="padding:10px 18px;color:#555;font-size:0.75rem;text-align:center;">Version <span id="version-settings"></span></div>
+        </div>
     </div>
 </div>
-
-<script>
 // ===== bigDashimi - Standalone Dashboard =====
+const VERSION = '1.5.0';
 
 // ----- Defaults -----
 const DEFAULT_STATIONS = [
@@ -758,6 +779,60 @@ function loadSpotifyUrl() { try { const s = localStorage.getItem('bigdashimi-spo
 function loadCountdowns() { try { const s = localStorage.getItem('bigdashimi-countdowns'); if (s) return JSON.parse(s); } catch(e) {} return DEFAULT_COUNTDOWNS.map(c => ({...c})); }
 function saveCountdowns() { localStorage.setItem('bigdashimi-countdowns', JSON.stringify(CONFIG.countdowns)); }
 function loadNotes() { try { return localStorage.getItem('bigdashimi-notes') || ''; } catch(e) { return ''; } }
+
+// ----- Settings Export/Import -----
+function exportSettings() {
+    const data = {
+        version: VERSION,
+        exportDate: new Date().toISOString(),
+        stations: CONFIG.oevStations,
+        weatherLocations: CONFIG.weatherLocations,
+        calendarId: CONFIG.calendarId,
+        calendarDark: CONFIG.calendarDark,
+        spotifyUrl: CONFIG.spotifyUrl,
+        countdowns: CONFIG.countdowns,
+        notes: loadNotes(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'bigdashimi-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+function importSettings(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.stations) { CONFIG.oevStations = data.stations; saveStations(); }
+            if (data.weatherLocations) { CONFIG.weatherLocations = data.weatherLocations; saveWeatherLocations(); }
+            if (data.calendarId !== undefined) { CONFIG.calendarId = data.calendarId; saveCalendarId(); }
+            if (data.calendarDark !== undefined) { CONFIG.calendarDark = data.calendarDark; saveCalendarDark(); }
+            if (data.spotifyUrl !== undefined) { CONFIG.spotifyUrl = data.spotifyUrl; localStorage.setItem('bigdashimi-spotify-url', data.spotifyUrl); }
+            if (data.countdowns) { CONFIG.countdowns = data.countdowns; saveCountdowns(); }
+            if (data.notes !== undefined) { localStorage.setItem('bigdashimi-notes', data.notes); }
+            alert('✅ Einstellungen importiert! Dashboard wird neu geladen.');
+            location.reload();
+        } catch(err) { alert('❌ Fehler beim Importieren: ' + err.message); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+function resetAllSettings() {
+    if (!confirm('⚠ Wirklich ALLE Einstellungen zur\u00fccksetzen? Das kann nicht r\u00fcckg\u00e4ngig gemacht werden.')) return;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('bigdashimi-'));
+    keys.forEach(k => localStorage.removeItem(k));
+    alert('Einstellungen zur\u00fcckgesetzt. Dashboard wird neu geladen.');
+    location.reload();
+}
+
+// ----- Service Worker -----
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 function saveNotes() { const ta = document.getElementById('notes-textarea'); localStorage.setItem('bigdashimi-notes', ta.value); document.getElementById('notes-chars').textContent = ta.value.length + ' Zeichen'; }
 
 // ----- Settings Panel -----
@@ -769,7 +844,7 @@ function switchTab(tab) {
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     const btn = document.querySelector('.settings-tab[data-tab="' + tab + '"]');
     if (btn) btn.classList.add('active');
-    ['stations','weather','calendar','spotify','countdown'].forEach(t => {
+    ['stations','weather','calendar','spotify','countdown','data'].forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.style.display = t === tab ? 'block' : 'none';
     });
@@ -778,6 +853,10 @@ function switchTab(tab) {
     if (tab === 'calendar') loadCalendarSettings();
     if (tab === 'spotify') loadSpotifySettings();
     if (tab === 'countdown') renderCountdownSettings();
+    // Update ARIA
+    document.querySelectorAll('.settings-tab').forEach(t => {
+        t.setAttribute('aria-selected', t.dataset.tab === tab ? 'true' : 'false');
+    });
 }
 
 // -- Stationen --
@@ -1487,6 +1566,12 @@ async function updateMarketPrices() {
 document.addEventListener('DOMContentLoaded', () => {
     initWeatherCanvas();
     updateDynamicBackground();
+
+    // Version anzeigen
+    const vd = document.getElementById('version-display');
+    if (vd) vd.textContent = 'v' + VERSION;
+    const vs = document.getElementById('version-settings');
+    if (vs) vs.textContent = VERSION;
 
     // Priorität 1: Sofort (lokal, kein API-Call)
     updateClock();
