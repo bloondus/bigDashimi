@@ -607,9 +607,29 @@ const DEFAULT_COUNTDOWNS = [
 const DEFAULT_MAP_LAT = 47.3769;
 const DEFAULT_MAP_LON = 8.5417;
 const NEWS_FEEDS = [
-    { name: 'SRF', url: 'https://www.srf.ch/news/bnf/rss/1890' },
-    { name: '20min', url: 'https://www.20min.ch/rss/rss.tmpl?type=channel&get=4&lang=de' },
+    { name: 'Blick', url: 'https://www.blick.ch/news/rss.xml' },
+    { name: 'NZZ', url: 'https://www.nzz.ch/recent.rss' },
+    { name: 'Watson', url: 'https://www.watson.ch/api/1.0/rss/index.xml', format: 'atom' },
 ];
+
+// CORS-Proxy Fallback-Kette
+const CORS_PROXIES = [
+    url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+];
+
+async function fetchWithProxy(url) {
+    for (const makeProxy of CORS_PROXIES) {
+        try {
+            const res = await fetch(makeProxy(url), { signal: AbortSignal.timeout(8000) });
+            if (res.ok) {
+                const text = await res.text();
+                if (text && !text.includes('<title>500') && !text.includes('error code:')) return text;
+            }
+        } catch(e) {}
+    }
+    return null;
+}
 
 // ----- Config -----
 const CONFIG = {
@@ -898,26 +918,40 @@ async function updateNews() {
     const el = document.getElementById('news-ticker');
     try {
         let allItems = [];
-        for (const feed of NEWS_FEEDS) {
+        const feedPromises = NEWS_FEEDS.map(async (feed) => {
             try {
-                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(feed.url);
-                const res = await fetch(proxyUrl);
-                if (!res.ok) continue;
-                const text = await res.text();
+                const text = await fetchWithProxy(feed.url);
+                if (!text) return;
                 const parser = new DOMParser();
                 const xml = parser.parseFromString(text, 'text/xml');
-                const items = xml.querySelectorAll('item');
-                items.forEach((item, i) => {
-                    if (i < 5) {
-                        const title = item.querySelector('title') ? item.querySelector('title').textContent : '';
-                        const link = item.querySelector('link') ? item.querySelector('link').textContent : '#';
-                        allItems.push({ source: feed.name, title, link });
-                    }
-                });
-            } catch(e) {}
-        }
+                // Atom-Format (Watson) oder RSS-Format
+                if (feed.format === 'atom') {
+                    const entries = xml.querySelectorAll('entry');
+                    entries.forEach((entry, i) => {
+                        if (i < 5) {
+                            const title = entry.querySelector('title') ? entry.querySelector('title').textContent : '';
+                            const linkEl = entry.querySelector('link[rel="alternate"]') || entry.querySelector('link');
+                            const link = linkEl ? (linkEl.getAttribute('href') || '#') : '#';
+                            allItems.push({ source: feed.name, title, link });
+                        }
+                    });
+                } else {
+                    const items = xml.querySelectorAll('item');
+                    items.forEach((item, i) => {
+                        if (i < 5) {
+                            const title = item.querySelector('title') ? item.querySelector('title').textContent : '';
+                            const link = item.querySelector('link') ? item.querySelector('link').textContent : '#';
+                            allItems.push({ source: feed.name, title, link });
+                        }
+                    });
+                }
+            } catch(e) { console.warn('News feed error:', feed.name, e); }
+        });
+        await Promise.all(feedPromises);
         if (allItems.length === 0) {
-            el.innerHTML = '<span class="news-item"><span class="news-source">📰</span> News nicht verfügbar</span>';
+            el.innerHTML = '<span class="news-item"><span class="news-source">📰</span> News werden geladen...</span>';
+            // Retry nach 15s
+            setTimeout(updateNews, 15000);
             return;
         }
         for (let i = allItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [allItems[i], allItems[j]] = [allItems[j], allItems[i]]; }
