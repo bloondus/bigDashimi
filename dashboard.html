@@ -1166,7 +1166,7 @@ async function fetchCrypto() {
 // Währungskurse (Frankfurter API - gratis, kein Key, unbegrenzt)
 async function fetchCurrencyRates() {
     try {
-        const res = await fetch('https://api.frankfurter.app/latest?from=CHF&to=EUR,USD,GBP,CNY');
+        const res = await fetch('https://api.frankfurter.dev/v1/latest?from=CHF&to=EUR,USD,GBP,CNY');
         if (!res.ok) return null;
         return await res.json();
     } catch(e) { return null; }
@@ -1176,35 +1176,33 @@ async function fetchCurrencyRates() {
 async function fetchCurrencyChange() {
     try {
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        const res = await fetch('https://api.frankfurter.app/' + yesterday + '?from=CHF&to=EUR,USD,GBP,CNY');
+        const res = await fetch('https://api.frankfurter.dev/v1/' + yesterday + '?from=CHF&to=EUR,USD,GBP,CNY');
         if (!res.ok) return null;
         return await res.json();
     } catch(e) { return null; }
 }
 
-// Halbleiter & Tech-Aktien (Yahoo Finance über CORS-Proxy)
+// Halbleiter & Tech-Aktien (CNBC Quote API - gratis, kein Key)
 async function fetchTechStocks() {
-    const symbols = ['NVDA','AMD','INTC','TSM','MU'];
-    const results = {};
-    for (const sym of symbols) {
-        try {
-            const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?range=5d&interval=1d';
-            const text = await fetchWithProxy(url);
-            if (text) {
-                const data = JSON.parse(text);
-                const meta = data.chart.result[0].meta;
-                const closes = data.chart.result[0].indicators.quote[0].close.filter(c => c !== null);
-                const prev = closes.length >= 2 ? closes[closes.length - 2] : meta.chartPreviousClose;
-                results[sym] = {
-                    price: meta.regularMarketPrice,
-                    prev: prev,
-                    currency: meta.currency,
-                    change: prev ? ((meta.regularMarketPrice - prev) / prev * 100) : 0
-                };
-            }
-        } catch(e) {}
-    }
-    return Object.keys(results).length > 0 ? results : null;
+    try {
+        const symbols = 'NVDA|AMD|INTC|TSM|MU';
+        const url = 'https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=' + symbols + '&requestMethod=itv&noCache=1&partnerId=2&fund=1&exthrs=1&output=json&events=1';
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        const quotes = data.FormattedQuoteResult.FormattedQuote;
+        const results = {};
+        for (const q of quotes) {
+            const price = parseFloat(q.last.replace(/,/g, ''));
+            const changePct = parseFloat(q.change_pct.replace('%', '').replace('+', ''));
+            results[q.symbol] = {
+                price: price,
+                currency: q.currencyCode || 'USD',
+                change: changePct
+            };
+        }
+        return Object.keys(results).length > 0 ? results : null;
+    } catch(e) { return null; }
 }
 
 function formatChange(pct) {
