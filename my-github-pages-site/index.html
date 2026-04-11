@@ -1,0 +1,203 @@
+---
+layout: default
+title: bigDashimi
+---
+
+<div class="dashboard-grid">
+    <!-- Restaurant/Tisch-Suche (neu) -->
+    <div class="widget widget-restaurant-search">
+        <div class="widget-title">
+            <span class="icon">🍽️</span>
+            RESTAURANT & TISCH-SUCHE
+        </div>
+        <form id="restaurant-search-form" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="search-address" placeholder="Adresse oder Ort" required style="flex:2;min-width:120px">
+            <input type="time" id="search-time" required style="flex:1;min-width:90px">
+            <button type="submit" style="flex:0">Suchen</button>
+        </form>
+        <div id="restaurant-search-results"></div>
+    </div>
+
+    <!-- ÖV Abfahrten (groß, links) -->
+    <div class="widget widget-oev">
+        <div class="widget-title">
+            <span class="icon">🚉</span>
+            ÖV ABFAHRTEN
+            <button class="btn-settings" onclick="openSettings()" title="Stationen bearbeiten">⚙️</button>
+        </div>
+        <div class="departure-list" id="departures-list">
+            <div class="loading">Lade Abfahrten...</div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2>⚙️ Einstellungen</h2>
+                <button class="btn-close" onclick="closeSettings()">✕</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')">🚏 Stationen</button>
+                <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')">🌤 Wetter</button>
+                <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')">📅 Kalender</button>
+                <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')">🎵 Spotify</button>
+            </div>
+
+            <!-- Tab: Stationen -->
+            <div id="tab-stations">
+                <div class="settings-add">
+                    <input type="text" id="new-station-input" placeholder="Stationsname eingeben (z.B. Zürich, Paradeplatz)" onkeydown="if(event.key==='Enter') addStation()">
+                    <button class="btn-add" onclick="addStation()">+ Hinzufügen</button>
+                </div>
+                <div class="settings-station-list" id="station-list"></div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetStations()">↺ Stationen zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+                </div>
+            </div>
+
+            <!-- Tab: Wetter -->
+            <div id="tab-weather" style="display:none;">
+                <div id="weather-settings-content"></div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetWeather()">↺ Wetter zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+                </div>
+            </div>
+
+            <!-- Tab: Kalender -->
+            <div id="tab-calendar" style="display:none;">
+                <div class="settings-info-box">
+                    <p>📅 Google Calendar einbetten</p>
+                    <p style="color:#888;font-size:0.8rem;margin-top:6px">Google Calendar → Einstellungen → «Kalender integrieren» → Öffentliche URL kopieren</p>
+                </div>
+                <div class="settings-add">
+                    <input type="text" id="calendar-url-input" placeholder="Google Calendar ID (z.B. de.ch#holiday@group.v.calendar.google.com)">
+                </div>
+                <div style="padding:10px 20px;">
+                    <label style="color:#888;font-size:0.85rem;display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="calendar-darkmode" checked>
+                        Dark Mode
+                    </label>
+                </div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetCalendar()">↺ Zurücksetzen</button>
+                    <button class="btn-apply" onclick="applyCalendar()">✓ Übernehmen</button>
+                </div>
+            </div>
+
+            <!-- Tab: Spotify -->
+            <div id="tab-spotify" style="display:none;">
+                <div class="settings-info-box">
+                    <p>🎵 Spotify Playlist oder Album einbetten</p>
+                    <p style="color:#888;font-size:0.8rem;margin-top:6px">Spotify → Teilen → «Link kopieren» — funktioniert mit Playlists, Alben, Podcasts & Tracks</p>
+                </div>
+                <div class="settings-add">
+                    <input type="text" id="spotify-url-input" placeholder="Spotify-Link einfügen (z.B. https://open.spotify.com/playlist/...)">
+                </div>
+                <div class="settings-footer">
+                    <button class="btn-reset" onclick="resetSpotify()">↺ Zurücksetzen</button>
+                    <button class="btn-apply" onclick="applySpotify()">✓ Übernehmen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wetter -->
+    <div class="widget widget-weather">
+        <div class="widget-title">
+            <span class="icon">🌤</span>
+            WETTER
+            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter-Standorte bearbeiten">⚙️</button>
+        </div>
+        <div class="weather-list" id="weather-content">
+            <div class="loading">Lade Wetter...</div>
+        </div>
+    </div>
+
+    <!-- Google Kalender (Spalte 3, Reihe 1) -->
+    <div class="widget widget-calendar">
+        <div class="widget-title">
+            <span class="icon">📅</span>
+            KALENDER
+            <button class="btn-settings" onclick="openSettings(); switchTab('calendar')" title="Kalender konfigurieren">⚙️</button>
+        </div>
+        <div class="calendar-embed" id="calendar-content">
+            <div class="loading">Lade Kalender...</div>
+        </div>
+    </div>
+
+    <!-- Datum + Status (Spalte 4, Reihe 1) -->
+    <div class="widget widget-status-combined">
+        <div class="widget-title">
+            <span class="icon">🗓</span>
+            DATUM & STATUS
+        </div>
+        <div class="date-compact">
+            <span class="date-big" id="date-day">--</span>
+            <div class="date-info">
+                <div class="date-month" id="date-month"></div>
+                <div class="date-weekday" id="date-weekday"></div>
+            </div>
+        </div>
+        <div class="status-compact">
+            <div class="status-item">
+                <span class="status-label"><span class="status-dot"></span>Dashboard</span>
+                <span class="status-value">Online</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Update</span>
+                <span class="status-value" id="last-update">--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Stationen</span>
+                <span class="status-value" id="station-count">3</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Wetter</span>
+                <span class="status-value" id="weather-count">1</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spotify Player (Spalte 3, Reihe 2) -->
+    <div class="widget widget-spotify">
+        <div class="widget-title">
+            <span class="icon">🎵</span>
+            SPOTIFY
+            <button class="btn-settings" onclick="openSettings(); switchTab('spotify')" title="Spotify konfigurieren">⚙️</button>
+        </div>
+        <div class="spotify-embed" id="spotify-content">
+            <div class="loading">Spotify konfigurieren → ⚙️</div>
+        </div>
+    </div>
+
+    <!-- Speed + Info (Spalte 4, Reihe 2) -->
+    <div class="widget widget-speed">
+        <div class="widget-title">
+            <span class="icon">📡</span>
+            INTERNET SPEED
+        </div>
+        <div class="speed-content" id="speed-content">
+            <div class="speed-gauge">
+                <div class="speed-value" id="speed-value">--</div>
+                <div class="speed-unit">Mbps</div>
+            </div>
+            <div class="speed-details">
+                <div class="speed-detail-item">
+                    <span class="speed-detail-label">Ping</span>
+                    <span class="speed-detail-value" id="speed-ping">--</span>
+                </div>
+                <div class="speed-detail-item">
+                    <span class="speed-detail-label">Status</span>
+                    <span class="speed-detail-value" id="speed-status">Bereit</span>
+                </div>
+            </div>
+            <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test</button>
+        </div>
+    </div>
+
+</div>

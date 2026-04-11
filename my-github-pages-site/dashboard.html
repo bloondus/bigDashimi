@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="300">
+    <title>📊 bigDashimi</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="All-in-One IT-Dashboard: 12 Widgets, 7 APIs, 0 API-Keys">
+    <meta property="og:title" content="bigDashimi — IT Dashboard">
+    <meta property="og:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei. ÖV, Wetter, Aktien, Crypto, News und mehr.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bloondus.github.io/bigDashimi/dashboard.html">
+    <meta property="og:image" content="https://bloondus.github.io/bigDashimi/screenshot.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="bigDashimi — IT Dashboard">
+    <meta name="twitter:description" content="12 Widgets, 7 APIs, 0 API-Keys, 1 HTML-Datei">
+    <style>
+/* ===== CSS VARIABLES ===== */
+:root {
+    --c-bg: #0a0a12;
+    --c-surface: #12122a;
+    --c-surface-alt: #1a1a35;
+    --c-border: #2a2a4a;
+    --c-border-subtle: #1f1f3a;
+    --c-primary: #00d4ff;
+    --c-primary-hover: #33ddff;
+    --c-success: #00ff88;
+    --c-success-hover: #33ff99;
+    --c-danger: #ff4444;
+    --c-warning: #ffa500;
+    --c-text: #e0e0e0;
+    --c-text-bright: #fff;
+    --c-text-muted: #888;
+    --c-text-dim: #666;
+    --c-text-faint: #555;
+    --c-text-ghost: #444;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+}
+
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: background 3s ease;
+}
+
+/* === Dynamischer Hintergrund & Wetter-Canvas === */
+#weather-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+.dashboard-header, .dashboard-grid, .news-ticker-bar, .settings-overlay {
+    position: relative;
+    z-index: 1;
+}
+/* Lightning flash */
+@keyframes lightning {
+    0%, 100% { opacity: 0; }
+    5% { opacity: 0.8; }
+    10% { opacity: 0; }
+    15% { opacity: 0.6; }
+    20% { opacity: 0; }
+}
+.lightning-flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.15);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+}
+
+/* Header */
+.dashboard-header {
+    background: rgba(13, 13, 26, 0.92);
+    backdrop-filter: blur(8px);
+    padding: 4px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--c-border);
+    flex-shrink: 0;
+    transition: background 3s ease;
+}
+.dashboard-header h1 { font-size: 1rem; color: var(--c-primary); font-weight: 600; }
+.header-clock { font-size: 1.2rem; font-weight: 300; color: var(--c-text-bright); letter-spacing: 2px; }
+.header-date { font-size: 0.7rem; color: var(--c-text-muted); margin-left: 10px; }
+
+/* Grid Layout - 5 Spalten, 3 Reihen */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 5px;
+    padding: 5px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Widgets */
+.widget {
+    background: linear-gradient(145deg, rgba(18,18,42,0.75), rgba(26,26,53,0.75));
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color 0.3s, background 3s ease;
+    min-height: 0;
+}
+.widget:hover { border-color: #00d4ff44; }
+
+.widget-title {
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--c-primary);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.widget-title .icon { font-size: 0.8rem; }
+
+/* ÖV Widget */
+.widget-oev { grid-row: span 2; }
+.station-section { margin-bottom: 4px; }
+.station-section:last-child { margin-bottom: 0; }
+.station-header {
+    font-size: 0.7rem; font-weight: 600; color: var(--c-primary);
+    padding: 3px 0 2px 0; border-bottom: 1px solid var(--c-border); margin-bottom: 2px;
+    position: sticky; top: 0; background: linear-gradient(145deg, var(--c-surface), var(--c-surface-alt)); z-index: 1;
+}
+.departure-list { flex: 1; overflow-y: auto; }
+.departure-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0; border-bottom: 1px solid var(--c-border-subtle);
+}
+.departure-item:last-child { border-bottom: none; }
+.dep-line {
+    background: var(--c-primary); color: #000; padding: 2px 6px; border-radius: 5px;
+    font-weight: 700; font-size: 0.7rem; min-width: 36px; text-align: center;
+}
+.dep-line.bus { background: var(--c-warning); }
+.dep-line.tram { background: var(--c-danger); color: var(--c-text-bright); }
+.dep-destination { flex: 1; margin-left: 6px; font-size: 0.75rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dep-time { font-size: 0.8rem; font-weight: 600; color: var(--c-text-bright); min-width: 40px; text-align: right; }
+.dep-countdown { font-size: 0.65rem; color: var(--c-primary); min-width: 30px; text-align: right; }
+
+/* Wetter Widget */
+.widget-weather { grid-row: span 2; }
+.weather-list { flex: 1; overflow-y: auto; }
+.weather-section { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--c-border-subtle); }
+.weather-section:last-child { border-bottom: none; margin-bottom: 0; }
+.weather-city-header { font-size: 0.7rem; font-weight: 600; color: var(--c-primary); margin-bottom: 3px; }
+.weather-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.weather-temp { font-size: 1.5rem; font-weight: 200; color: var(--c-text-bright); }
+.weather-desc { font-size: 0.75rem; color: #aaa; text-transform: capitalize; }
+.weather-icon { font-size: 2rem; }
+.weather-details { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 0.7rem; color: #888; }
+.weather-details span { display: flex; align-items: center; gap: 4px; }
+
+/* Kalender Widget */
+.calendar-embed { flex: 1; overflow: hidden; border-radius: 8px; }
+.calendar-iframe { width: 100%; height: 100%; min-height: 120px; border: none; border-radius: 8px; background: var(--c-bg); }
+
+/* Datum & Status Widget */
+.date-compact { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.date-compact .date-big { font-size: 2rem; font-weight: 200; color: var(--c-text-bright); line-height: 1; }
+date-info { display: flex; flex-direction: column; gap: 1px; }
+.date-compact .date-month { font-size: 0.8rem; color: var(--c-primary); }
+.date-compact .date-weekday { font-size: 0.7rem; color: var(--c-text-muted); }
+.status-compact { border-top: 1px solid var(--c-border); padding-top: 4px; }
+.status-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--c-border-subtle); font-size: 0.72rem; }
+.status-label { color: var(--c-text-muted); }
+.status-value { color: var(--c-text-bright); font-weight: 500; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c-success); margin-right: 6px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Spotify Widget */
+.spotify-embed { flex: 1; overflow: hidden; border-radius: 8px; }
+.spotify-iframe { width: 100%; height: 152px; border: none; border-radius: 8px; background: #121212; }
+
+/* Speed Widget */
+.speed-content { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 2px 0; }
+.speed-gauge { text-align: center; }
+.speed-value { font-size: 1.6rem; font-weight: 200; color: var(--c-primary); line-height: 1; }
+.speed-unit { font-size: 0.65rem; color: var(--c-text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 2px; }
+.speed-details { display: flex; gap: 14px; width: 100%; justify-content: center; }
+.speed-detail-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.speed-detail-label { font-size: 0.6rem; color: var(--c-text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.speed-detail-value { font-size: 0.8rem; color: var(--c-text-bright); font-weight: 500; }
+.btn-speedtest {
+    background: linear-gradient(135deg, var(--c-primary), #0088cc); color: var(--c-text-bright); border: none;
+    border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+}
+.btn-speedtest:hover { background: linear-gradient(135deg, var(--c-primary-hover), #00aaee); transform: scale(1.02); }
+.btn-speedtest:disabled { opacity: 0.6; cursor: wait; transform: none; }
+
+/* === Zitat Widget === */
+.quote-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 4px; }
+.quote-text { font-size: 0.85rem; font-style: italic; color: #ddd; line-height: 1.4; margin-bottom: 6px; }
+.quote-author { font-size: 0.7rem; color: var(--c-primary); font-weight: 500; }
+.btn-new-quote { background: none; border: 1px solid var(--c-border); color: var(--c-text-muted); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.65rem; cursor: pointer; margin-top: 6px; }
+.btn-new-quote:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+/* === Countdown Widget === */
+.countdown-content { flex: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.countdown-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 6px; background: var(--c-surface-alt); border-radius: var(--radius-sm); border-left: 3px solid var(--c-primary); }
+.countdown-label { font-size: 0.7rem; color: #ccc; flex: 1; }
+.countdown-value { font-size: 0.75rem; font-weight: 600; color: var(--c-primary); white-space: nowrap; }
+.countdown-value.urgent { color: var(--c-danger); }
+.countdown-value.today { color: var(--c-success); }
+
+/* === Mondphase Widget === */
+.moon-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.moon-emoji { font-size: 2.2rem; line-height: 1; }
+.moon-name { font-size: 0.8rem; color: var(--c-text-bright); font-weight: 500; }
+.moon-details { display: flex; flex-direction: column; gap: 2px; align-items: center; font-size: 0.7rem; color: var(--c-text-muted); }
+
+/* === Mini-Karte Widget === */
+.map-embed { flex: 1; overflow: hidden; border-radius: 8px; }
+.map-iframe { width: 100%; height: 100%; min-height: 120px; border: none; border-radius: 8px; filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1); }
+
+/* === Notizen Widget === */
+.notes-content { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.notes-textarea {
+    flex: 1; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 8px;
+    color: #ddd; padding: 8px; font-size: 0.8rem; font-family: inherit;
+    resize: none; outline: none; line-height: 1.4;
+}
+.notes-textarea:focus { border-color: var(--c-primary); }
+.notes-textarea::placeholder { color: var(--c-text-ghost); }
+.notes-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; color: var(--c-text-faint); flex-shrink: 0; }
+
+/* === Markt & Hardware Preise === */
+.hw-content { flex: 1; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+.hw-section { margin-bottom: 2px; }
+.hw-section-title { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--c-text-faint); padding: 2px 0; border-bottom: 1px solid var(--c-border-subtle); margin-bottom: 2px; }
+.hw-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px; border-radius: 5px; font-size: 0.72rem; transition: background 0.2s; }
+.hw-row:hover { background: rgba(255,255,255,0.03); }
+.hw-name { color: #ccc; display: flex; align-items: center; gap: 5px; flex: 1; }
+.hw-name .hw-icon { font-size: 0.85rem; }
+.hw-price { color: var(--c-text-bright); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+.hw-change { font-size: 0.68rem; font-weight: 600; min-width: 65px; text-align: right; font-variant-numeric: tabular-nums; }
+.hw-change.up { color: var(--c-success); }
+.hw-change.down { color: var(--c-danger); }
+.hw-change.neutral { color: var(--c-text-dim); }
+.hw-updated { font-size: 0.5rem; color: var(--c-text-ghost); text-align: right; margin-top: auto; padding-top: 2px; }
+.hw-range { display: flex; align-items: center; gap: 3px; font-size: 0.5rem; color: var(--c-text-faint); padding: 0 6px 1px; }
+.hw-range-bar { flex: 1; height: 3px; background: #1a1a2e; border-radius: 2px; position: relative; max-width: 120px; }
+.hw-range-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--c-danger), var(--c-warning), var(--c-success)); }
+.hw-range-dot { position: absolute; top: -2px; width: 7px; height: 7px; border-radius: 50%; background: var(--c-text-bright); border: 1px solid #333; transform: translateX(-50%); }
+.hw-range-label { color: var(--c-text-ghost); font-variant-numeric: tabular-nums; }
+.hw-sparkline { padding: 0 6px; }
+.hw-sparkline svg { display: block; }
+
+/* === News Ticker === */
+.news-ticker-bar {
+    background: linear-gradient(135deg, #0d0d1a, #1a1a2e);
+    border-top: 1px solid var(--c-border);
+    padding: 4px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.news-ticker-content {
+    display: inline-block;
+    animation: ticker 90s linear infinite;
+    font-size: 0.72rem;
+    color: #aaa;
+}
+.news-ticker-content:hover { animation-play-state: paused; }
+.news-item { display: inline; margin-right: 40px; }
+.news-item .news-source { color: var(--c-primary); font-weight: 600; margin-right: 6px; }
+.news-item a { color: #ccc; text-decoration: none; }
+.news-item a:hover { color: var(--c-text-bright); text-decoration: underline; }
+.news-separator { color: var(--c-border); margin: 0 10px; }
+@keyframes ticker {
+    0% { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .news-ticker-content { animation: none !important; }
+    #weather-canvas { display: none !important; }
+    .lightning-flash { display: none !important; }
+    .status-dot { animation: none !important; }
+    * { transition-duration: 0s !important; }
+}
+
+/* Keyboard Focus */
+:focus-visible {
+    outline: 2px solid var(--c-primary);
+    outline-offset: 2px;
+}
+button:focus:not(:focus-visible) { outline: none; }
+
+/* Loading & Error */
+.loading { color: var(--c-text-faint); font-style: italic; text-align: center; padding: 15px; font-size: 0.8rem; }
+.error { color: var(--c-danger); font-size: 0.8rem; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
+
+/* Settings Button */
+.btn-settings { background: none; border: none; font-size: 1rem; cursor: pointer; margin-left: auto; padding: 3px 6px; border-radius: var(--radius-sm); transition: background 0.2s; }
+.btn-settings:hover { background: var(--c-border); }
+
+/* Settings Overlay */
+.settings-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+.settings-overlay.active { display: flex; }
+.settings-panel { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-lg); width: 90%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.settings-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--c-border); }
+.settings-header h2 { font-size: 1.1rem; color: var(--c-text-bright); margin: 0; }
+.btn-close { background: none; border: none; color: var(--c-text-muted); font-size: 1.3rem; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-sm); }
+.btn-close:hover { background: var(--c-border); color: var(--c-text-bright); }
+
+/* Settings Tabs */
+.settings-tabs { display: flex; border-bottom: 1px solid var(--c-border); overflow-x: auto; }
+.settings-tab { flex-shrink: 0; background: none; border: none; color: var(--c-text-dim); padding: 10px 12px; font-size: 0.8rem; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+.settings-tab:hover { color: #aaa; background: var(--c-surface-alt); }
+.settings-tab.active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
+
+/* Settings Content */
+.settings-info-box { padding: 12px 18px; background: var(--c-surface-alt); margin: 10px 18px; border-radius: var(--radius); color: #ccc; font-size: 0.85rem; }
+.settings-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--c-text-dim); padding: 10px 18px 4px 18px; }
+.settings-add { display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid var(--c-border-subtle); }
+.settings-add input { flex: 1; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 8px; color: var(--c-text-bright); padding: 10px 12px; font-size: 0.85rem; outline: none; }
+.settings-add input:focus { border-color: var(--c-primary); }
+.settings-add input::placeholder { color: var(--c-text-faint); }
+.btn-add { background: var(--c-primary); color: #000; border: none; border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+.btn-add:hover { background: var(--c-primary-hover); }
+.settings-station-list { flex: 1; overflow-y: auto; padding: 8px 18px; }
+.settings-station-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--c-surface-alt); border-radius: var(--radius); margin-bottom: 6px; }
+.settings-station-info { display: flex; flex-direction: column; gap: 2px; }
+.settings-station-name { color: var(--c-text-bright); font-size: 0.9rem; font-weight: 500; }
+.settings-station-query { color: var(--c-text-dim); font-size: 0.7rem; }
+.settings-station-actions { display: flex; gap: 4px; }
+.btn-move, .btn-delete { background: var(--c-border); border: none; color: #aaa; width: 28px; height: 28px; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+.btn-move:hover { background: #3a3a5a; color: var(--c-text-bright); }
+.btn-move:disabled { opacity: 0.3; cursor: default; }
+.btn-delete { color: var(--c-danger); }
+.btn-delete:hover { background: #ff444433; color: #ff6666; }
+.weather-result { cursor: pointer; transition: background 0.2s; }
+.weather-result:hover { background: #2a2a55 !important; }
+.settings-footer { display: flex; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--c-border); }
+.btn-reset { background: none; border: 1px solid var(--c-border); color: var(--c-text-muted); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+.btn-reset:hover { border-color: var(--c-warning); color: var(--c-warning); }
+.btn-apply { background: var(--c-success); color: #000; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+.btn-apply:hover { background: var(--c-success-hover); }
+
+/* Responsive - Tablet Landscape */
+@media (max-width: 1400px) {
+    .dashboard-grid { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto; overflow-y: auto; }
+    .widget-oev, .widget-weather { grid-row: span 1; min-height: 280px; }
+}
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+    body { overflow-y: auto; }
+    .dashboard-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; height: auto; overflow-y: auto; gap: 8px; padding: 8px; }
+    .widget-oev, .widget-weather { grid-row: span 1; min-height: 260px; }
+    .widget { padding: 12px; }
+    .news-ticker-bar { position: relative; }
+}
+/* Responsive - Mobile */
+@media (max-width: 600px) {
+    body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .dashboard-header {
+        flex-direction: column; gap: 4px; padding: 10px 15px;
+        position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
+        background: rgba(13, 13, 26, 0.95);
+    }
+    .dashboard-header h1 { font-size: 1rem; }
+    .header-clock { font-size: 1.6rem; letter-spacing: 3px; }
+    .header-date { font-size: 0.75rem; margin-left: 0; }
+    .dashboard-grid {
+        grid-template-columns: 1fr !important; height: auto; overflow-y: visible;
+        gap: 8px; padding: 8px;
+    }
+    /* Force alle Widgets auf 1 Spalte – auch bei inline style="grid-column: span 2" */
+    .widget,
+    .dashboard-grid > * {
+        grid-column: span 1 !important; grid-row: span 1 !important;
+        padding: 14px 12px; border-radius: 10px;
+        min-height: auto; max-height: none; overflow: visible;
+        min-width: 0; /* Verhindert Overflow durch lange Inhalte */
+    }
+    .departure-list, .weather-list { max-height: none; overflow-y: visible; }
+    .station-header { position: static; }
+    .departure-item { padding: 6px 0; }
+    .dep-line { font-size: 0.8rem; padding: 4px 10px; min-width: 44px; text-align: center; }
+    .dep-destination { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dep-time, .dep-countdown { font-size: 0.8rem; }
+    .btn-settings { font-size: 1.2rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .settings-overlay { align-items: flex-end; }
+    .settings-panel { width: 100%; max-width: 100%; max-height: 90vh; border-radius: 16px 16px 0 0; }
+    .settings-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .settings-tab { padding: 10px 8px; font-size: 0.75rem; white-space: nowrap; }
+    .settings-add { flex-direction: column; }
+    .settings-add input { width: 100% !important; }
+    .btn-speedtest { width: 100%; padding: 12px; min-height: 44px; }
+    .notes-textarea { min-height: 120px; }
+    .news-ticker-bar { padding: 8px 0; }
+    .news-ticker-content { font-size: 0.85rem; }
+    /* iframes responsive */
+    iframe { width: 100% !important; max-width: 100% !important; }
+    /* Markt-Widget: Range-Bars und Sparklines ausblenden (zu klein) */
+    .hw-range { display: none; }
+    .hw-sparkline { display: none; }
+    .hw-row { flex-wrap: wrap; gap: 4px; }
+    .hw-name { font-size: 0.8rem; flex: 1 1 100%; }
+    .hw-price { font-size: 0.85rem; }
+    .hw-change { font-size: 0.75rem; }
+    /* Countdown kompakt */
+    .countdown-item { flex-direction: column; gap: 2px; align-items: flex-start; }
+    /* Wetter kompakt */
+    .weather-details { font-size: 0.75rem; }
+    .weather-temp { font-size: 1.8rem; }
+    /* Karte Mindesthöhe */
+    #map-content iframe, #calendar-content iframe, #spotify-content iframe { min-height: 250px; }
+}
+/* Responsive - Sehr kleine Screens (iPhone SE etc.) */
+@media (max-width: 360px) {
+    .dashboard-header { padding: 8px 10px; }
+    .header-clock { font-size: 1.3rem; }
+    .header-date { font-size: 0.65rem; }
+    .dashboard-grid { padding: 6px; gap: 6px; }
+    .widget { padding: 10px !important; }
+    .widget-title { font-size: 0.5rem; letter-spacing: 1px; }
+    .hw-name { font-size: 0.7rem; }
+    .dep-line { min-width: 36px; font-size: 0.7rem; padding: 3px 6px; }
+}
+    </style>
+</head>
+<body>
+
+<!-- WEATHER ANIMATION CANVAS -->
+<canvas id="weather-canvas" role="presentation" aria-hidden="true"></canvas>
+<div id="lightning-overlay" class="lightning-flash" aria-hidden="true"></div>
+
+<!-- HEADER -->
+<header class="dashboard-header" role="banner">
+    <h1>📊 bigDashimi</h1>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <time class="header-clock" id="header-time" aria-live="polite">--:--:--</time>
+        <span class="header-date" id="header-date" aria-live="polite"></span>
+    </div>
+</header>
+
+<!-- DASHBOARD GRID -->
+<main class="dashboard-grid" role="main">
+
+    <!-- 1: ÖV Abfahrten -->
+    <section class="widget widget-oev" aria-label="ÖV Abfahrten">
+        <div class="widget-title">
+            <span class="icon" aria-hidden="true">🚉</span> ÖV ABFAHRTEN
+            <button class="btn-settings" onclick="openSettings()" title="Stationen bearbeiten" aria-label="ÖV-Stationen bearbeiten">⚙️</button>
+        </div>
+        <div class="departure-list" id="departures-list">
+            <div class="loading">Lade Abfahrten...</div>
+        </div>
+    </section>
+
+    <!-- 2: Wetter -->
+    <section class="widget widget-weather" aria-label="Wetter">
+        <div class="widget-title">
+            <span class="icon" aria-hidden="true">🌤</span> WETTER
+            <button class="btn-settings" onclick="openSettings(); switchTab('weather')" title="Wetter bearbeiten" aria-label="Wetterstandorte bearbeiten">⚙️</button>
+        </div>
+        <div class="weather-list" id="weather-content">
+            <div class="loading">Lade Wetter...</div>
+        </div>
+    </section>
+
+    <!-- 3: Kalender -->
+    <section class="widget widget-calendar" aria-label="Kalender">
+        <div class="widget-title">
+            <span class="icon" aria-hidden="true">📅</span> KALENDER
+            <button class="btn-settings" onclick="openSettings(); switchTab('calendar')" title="Kalender konfigurieren" aria-label="Kalender konfigurieren">⚙️</button>
+        </div>
+        <div class="calendar-embed" id="calendar-content">
+            <div class="loading">Lade Kalender...</div>
+        </div>
+    </section>
+
+    <!-- 4: Datum & Status -->
+    <section class="widget" aria-label="Datum und Status">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗓</span> DATUM & STATUS</div>
+        <div class="date-compact">
+            <span class="date-big" id="date-day">--</span>
+            <div class="date-info">
+                <div class="date-month" id="date-month"></div>
+                <div class="date-weekday" id="date-weekday"></div>
+            </div>
+        </div>
+        <div class="status-compact">
+            <div class="status-item"><span class="status-label"><span class="status-dot"></span>Dashboard</span><span class="status-value">Online</span></div>
+            <div class="status-item"><span class="status-label">Version</span><span class="status-value" id="version-display">--</span></div>
+            <div class="status-item"><span class="status-label">Update</span><span class="status-value" id="last-update">--:--</span></div>
+            <div class="status-item"><span class="status-label">Stationen</span><span class="status-value" id="station-count">3</span></div>
+            <div class="status-item"><span class="status-label">Wetter</span><span class="status-value" id="weather-count">1</span></div>
+            <div class="status-item" id="error-row" style="display:none;"><span class="status-label" style="color:var(--c-danger)">⚠ Fehler</span><span class="status-value" id="dashboard-errors" style="color:var(--c-danger);font-size:0.6rem;"></span></div>
+        </div>
+    </section>
+
+    <!-- 5: Mondphase -->
+    <section class="widget" aria-label="Mondphase">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🌙</span> MOND & SONNE</div>
+        <div class="moon-content" id="moon-content">
+            <div class="loading">Lade...</div>
+        </div>
+    </section>
+
+    <!-- 6: Spotify -->
+    <section class="widget widget-spotify" aria-label="Spotify">
+        <div class="widget-title">
+            <span class="icon" aria-hidden="true">🎵</span> SPOTIFY
+            <button class="btn-settings" onclick="openSettings(); switchTab('spotify')" title="Spotify konfigurieren" aria-label="Spotify konfigurieren">⚙️</button>
+        </div>
+        <div class="spotify-embed" id="spotify-content">
+            <div class="loading">Lade Spotify...</div>
+        </div>
+    </section>
+
+    <!-- 7: Zitat des Tages -->
+    <section class="widget" aria-label="Zitat des Tages">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗣️</span> ZITAT DES TAGES</div>
+        <div class="quote-content" id="quote-content">
+            <div class="loading">Lade Zitat...</div>
+        </div>
+    </section>
+
+    <!-- 8: Internet Speed -->
+    <section class="widget widget-speed" aria-label="Internet Speed Test">
+        <div class="widget-title"><span class="icon" aria-hidden="true">📡</span> SPEED</div>
+        <div class="speed-content" id="speed-content">
+            <div class="speed-gauge">
+                <div class="speed-value" id="speed-value">--</div>
+                <div class="speed-unit">Mbps</div>
+            </div>
+            <div class="speed-details">
+                <div class="speed-detail-item"><span class="speed-detail-label">Ping</span><span class="speed-detail-value" id="speed-ping">--</span></div>
+                <div class="speed-detail-item"><span class="speed-detail-label">Status</span><span class="speed-detail-value" id="speed-status">Bereit</span></div>
+            </div>
+            <button class="btn-speedtest" id="btn-speedtest" onclick="runSpeedTest()">▶ Speed Test</button>
+        </div>
+    </section>
+
+    <!-- 9: Countdown -->
+    <section class="widget" aria-label="Countdown">
+        <div class="widget-title">
+            <span class="icon" aria-hidden="true">⏱️</span> COUNTDOWN
+            <button class="btn-settings" onclick="openSettings(); switchTab('countdown')" title="Countdown bearbeiten" aria-label="Countdown bearbeiten">⚙️</button>
+        </div>
+        <div class="countdown-content" id="countdown-content"></div>
+    </section>
+
+    <!-- 10: Notizen -->
+    <section class="widget" aria-label="Notizen">
+        <div class="widget-title"><span class="icon" aria-hidden="true">📝</span> NOTIZEN</div>
+        <div class="notes-content">
+            <textarea class="notes-textarea" id="notes-textarea" placeholder="Notizen, Todos..." oninput="saveNotes()"></textarea>
+            <div class="notes-footer">
+                <span id="notes-chars">0 Zeichen</span>
+                <span>💾 auto</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 11: Mini-Karte -->
+    <section class="widget" aria-label="Karte">
+        <div class="widget-title"><span class="icon" aria-hidden="true">🗺️</span> KARTE</div>
+        <div class="map-embed" id="map-content">
+            <div class="loading">Lade Karte...</div>
+        </div>
+    </section>
+
+    <!-- 12: Markt & Hardware Preise -->
+    <section class="widget" style="grid-column: span 2;" aria-label="Markt und Hardware Preise">
+        <div class="widget-title"><span class="icon" aria-hidden="true">💰</span> MARKT & HARDWARE</div>
+        <div class="hw-content" id="hw-content">
+            <div class="loading">⏳ Lade Marktdaten...</div>
+        </div>
+    </section>
+
+</main>
+
+<!-- NEWS TICKER -->
+<footer class="news-ticker-bar" role="contentinfo" aria-label="News Ticker">
+    <div class="news-ticker-content" id="news-ticker" aria-live="off">
+        <span class="news-item"><span class="news-source">📰</span> Lade News...</span>
+    </div>
+</footer>
+
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settings-overlay">
+    <div class="settings-panel">
+        <div class="settings-header">
+            <h2>⚙️ Einstellungen</h2>
+            <button class="btn-close" onclick="closeSettings()" aria-label="Einstellungen schliessen">✕</button>
+        </div>
+        <div class="settings-tabs" role="tablist">
+            <button class="settings-tab active" data-tab="stations" onclick="switchTab('stations')" role="tab" aria-selected="true">🚏 Stationen</button>
+            <button class="settings-tab" data-tab="weather" onclick="switchTab('weather')" role="tab" aria-selected="false">🌤 Wetter</button>
+            <button class="settings-tab" data-tab="calendar" onclick="switchTab('calendar')" role="tab" aria-selected="false">📅 Kalender</button>
+            <button class="settings-tab" data-tab="spotify" onclick="switchTab('spotify')" role="tab" aria-selected="false">🎵 Spotify</button>
+            <button class="settings-tab" data-tab="countdown" onclick="switchTab('countdown')" role="tab" aria-selected="false">⏱️ Countdown</button>
+            <button class="settings-tab" data-tab="data" onclick="switchTab('data')" role="tab" aria-selected="false">💾 Daten</button>
+        </div>
+        <div id="tab-stations">
+            <div class="settings-add">
+                <input type="text" id="new-station-input" placeholder="Stationsname (z.B. Zürich, Paradeplatz)" onkeydown="if(event.key==='Enter') addStation()">
+                <button class="btn-add" onclick="addStation()">+ Hinzufügen</button>
+            </div>
+            <div class="settings-station-list" id="station-list"></div>
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetStations()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+            </div>
+        </div>
+        <div id="tab-weather" style="display:none;">
+            <div id="weather-settings-content"></div>
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetWeather()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="applySettings()">✓ Übernehmen</button>
+            </div>
+        </div>
+        <div id="tab-calendar" style="display:none;">
+            <div class="settings-info-box">
+                <p>📅 Google Calendar einbetten</p>
+                <p style="color:#888;font-size:0.8rem;margin-top:6px">Google Calendar → Einstellungen → «Kalender integrieren» → Öffentliche URL</p>
+            </div>
+            <div class="settings-add">
+                <input type="text" id="calendar-url-input" placeholder="Google Calendar ID">
+            </div>
+            <div style="padding:10px 18px;">
+                <label style="color:#888;font-size:0.85rem;display:flex;align-items:center;gap:8px;">
+                    <input type="checkbox" id="calendar-darkmode" checked> Dark Mode
+                </label>
+            </div>
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetCalendar()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="applyCalendar()">✓ Übernehmen</button>
+            </div>
+        </div>
+        <div id="tab-spotify" style="display:none;">
+            <div class="settings-info-box">
+                <p>🎵 Spotify Playlist oder Album einbetten</p>
+                <p style="color:#888;font-size:0.8rem;margin-top:6px">Spotify → Teilen → «Link kopieren»</p>
+            </div>
+            <div class="settings-add">
+                <input type="text" id="spotify-url-input" placeholder="Spotify-Link einfügen">
+            </div>
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetSpotify()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="applySpotify()">✓ Übernehmen</button>
+            </div>
+        </div>
+        <div id="tab-countdown" style="display:none;">
+            <div class="settings-info-box">
+                <p>⏱️ Countdown-Events verwalten</p>
+                <p style="color:#888;font-size:0.8rem;margin-top:6px">Füge Events hinzu mit Name und Datum</p>
+            </div>
+            <div class="settings-add">
+                <input type="text" id="cd-name-input" placeholder="Event-Name (z.B. Urlaub)">
+                <input type="date" id="cd-date-input" style="flex:0.6;background:#0a0a12;border:1px solid #2a2a4a;border-radius:8px;color:#fff;padding:10px;font-size:0.85rem;outline:none;">
+                <button class="btn-add" onclick="addCountdown()">+</button>
+            </div>
+            <div class="settings-station-list" id="cd-settings-list"></div>
+            <div class="settings-footer">
+                <button class="btn-reset" onclick="resetCountdowns()">↺ Zurücksetzen</button>
+                <button class="btn-apply" onclick="closeSettings()">✓ Fertig</button>
+            </div>
+        </div>
+        <div id="tab-data" style="display:none;">
+            <div class="settings-info-box">
+                <p>💾 Einstellungen sichern & wiederherstellen</p>
+                <p style="color:#888;font-size:0.8rem;margin-top:6px">Exportiere alle Einstellungen als JSON-Datei oder importiere eine vorhandene Sicherung.</p>
+            </div>
+            <div style="padding:10px 18px;display:flex;gap:10px;flex-direction:column;">
+                <button class="btn-apply" onclick="exportSettings()" style="width:100%;">📤 Einstellungen exportieren (JSON)</button>
+                <label class="btn-reset" style="width:100%;text-align:center;cursor:pointer;">
+                    📥 Einstellungen importieren
+                    <input type="file" accept=".json" onchange="importSettings(event)" style="display:none;">
+                </label>
+                <button class="btn-delete" onclick="resetAllSettings()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--c-danger);background:transparent;color:var(--c-danger);cursor:pointer;margin-top:10px;">⚠ Alle Einstellungen zurücksetzen</button>
+            </div>
+            <div style="padding:10px 18px;color:#555;font-size:0.75rem;text-align:center;">Version <span id="version-settings"></span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== bigDashimi - Standalone Dashboard =====
+const VERSION = '1.9.0';
+
+// ----- Defaults -----
+const DEFAULT_STATIONS = [
+    { name: 'Spital Zollikerberg', query: 'Spital Zollikerberg' },
+    { name: 'Einfangstrasse', query: 'Zürich, Einfangstrasse' },
+    { name: 'Schumacherweg', query: 'Zürich, Schumacherweg' },
+];
+const DEFAULT_WEATHER_LOCATIONS = [{ city: 'Zürich', lat: 47.3769, lon: 8.5417 }];
+const DEFAULT_CALENDAR_ID = 'de.ch%23holiday@group.v.calendar.google.com';
+const DEFAULT_SPOTIFY_URL = 'https://open.spotify.com/playlist/0I65LEEJ7jSS3cAdENg852';
+const DEFAULT_COUNTDOWNS = [
+    { name: '🎄 Weihnachten', date: new Date().getFullYear() + '-12-25' },
+    { name: '🎆 Neujahr', date: (new Date().getFullYear() + 1) + '-01-01' },
+];
+const DEFAULT_MAP_LAT = 47.3769;
+const DEFAULT_MAP_LON = 8.5417;
+const NEWS_FEEDS = [
+    { name: '🖥️ Heise', url: 'https://www.heise.de/rss/heise-atom.xml', format: 'atom' },
+    { name: '⚙️ Golem', url: 'https://rss.golem.de/rss.php?feed=RSS2.0' },
+    { name: '🔧 HWLuxx', url: 'https://www.hardwareluxx.de/index.php/news.feed?type=rss' },
+];
+
+// CORS-Proxy Fallback-Kette
+const CORS_PROXIES = [
+    url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+];
+
+// XSS-Schutz: Text-Sanitizer (performant, kein DOM-Element)
+function sanitize(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// URL-Validation für iframes
+function isValidUrl(str, allowedHosts) {
+    try { const u = new URL(str); if (!['https:','http:'].includes(u.protocol)) return false; if (allowedHosts && !allowedHosts.some(h => u.hostname.endsWith(h))) return false; return true; } catch { return false; }
+}
+let weatherLoaded = false;
+
+// API-Cache (localStorage mit TTL)
+function cacheGet(key) {
+    try {
+        const raw = localStorage.getItem('bigdashimi-cache-' + key);
+        if (!raw) return null;
+        const { data, expires } = JSON.parse(raw);
+        if (Date.now() > expires) { localStorage.removeItem('bigdashimi-cache-' + key); return null; }
+        return data;
+    } catch(e) { return null; }
+}
+function cacheSet(key, data, ttlMs) {
+    try {
+        localStorage.setItem('bigdashimi-cache-' + key, JSON.stringify({ data, expires: Date.now() + ttlMs }));
+    } catch(e) {}
+}
+
+async function fetchWithProxy(url) {
+    for (const makeProxy of CORS_PROXIES) {
+        try {
+            const res = await fetch(makeProxy(url), { signal: AbortSignal.timeout(8000) });
+            if (res.ok) {
+                const text = await res.text();
+                if (text && !text.includes('<title>500') && !text.includes('error code:')) return text;
+            }
+        } catch(e) {}
+    }
+    return null;
+}
+
+// ----- Config -----
+const CONFIG = {
+    weatherLocations: loadWeatherLocations(),
+    oevStations: loadStations(),
+    oevLimit: 5,
+    calendarId: loadCalendarId(),
+    calendarDark: loadCalendarDark(),
+    spotifyUrl: loadSpotifyUrl(),
+    countdowns: loadCountdowns(),
+    clockInterval: 1000,
+    weatherInterval: 5 * 60 * 1000,
+    oevInterval: 60 * 1000,
+    newsInterval: 10 * 60 * 1000,
+    quoteInterval: 60 * 60 * 1000,
+};
+
+// ----- localStorage helpers -----
+function loadStations() { try { const s = localStorage.getItem('bigdashimi-stations'); if (s) return JSON.parse(s); } catch(e) {} return DEFAULT_STATIONS.map(s => ({...s})); }
+function saveStations() { localStorage.setItem('bigdashimi-stations', JSON.stringify(CONFIG.oevStations)); }
+function loadWeatherLocations() { try { const s = localStorage.getItem('bigdashimi-weather-locations'); if (s) return JSON.parse(s); } catch(e) {} return DEFAULT_WEATHER_LOCATIONS.map(w => ({...w})); }
+function saveWeatherLocations() { localStorage.setItem('bigdashimi-weather-locations', JSON.stringify(CONFIG.weatherLocations)); }
+function loadCalendarId() { try { const s = localStorage.getItem('bigdashimi-calendar-id'); if (s) return s; } catch(e) {} return DEFAULT_CALENDAR_ID; }
+function saveCalendarId() { localStorage.setItem('bigdashimi-calendar-id', CONFIG.calendarId); }
+function loadCalendarDark() { try { const s = localStorage.getItem('bigdashimi-calendar-dark'); if (s !== null) return s === 'true'; } catch(e) {} return true; }
+function saveCalendarDark() { localStorage.setItem('bigdashimi-calendar-dark', CONFIG.calendarDark); }
+function loadSpotifyUrl() { try { const s = localStorage.getItem('bigdashimi-spotify-url'); if (s !== null) return s; } catch(e) {} return DEFAULT_SPOTIFY_URL; }
+function loadCountdowns() { try { const s = localStorage.getItem('bigdashimi-countdowns'); if (s) return JSON.parse(s); } catch(e) {} return DEFAULT_COUNTDOWNS.map(c => ({...c})); }
+function saveCountdowns() { localStorage.setItem('bigdashimi-countdowns', JSON.stringify(CONFIG.countdowns)); }
+function loadNotes() { try { return localStorage.getItem('bigdashimi-notes') || ''; } catch(e) { return ''; } }
+
+// ----- Settings Export/Import -----
+function exportSettings() {
+    const data = {
+        version: VERSION,
+        exportDate: new Date().toISOString(),
+        stations: CONFIG.oevStations,
+        weatherLocations: CONFIG.weatherLocations,
+        calendarId: CONFIG.calendarId,
+        calendarDark: CONFIG.calendarDark,
+        spotifyUrl: CONFIG.spotifyUrl,
+        countdowns: CONFIG.countdowns,
+        notes: loadNotes(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'bigdashimi-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+function importSettings(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.stations) { CONFIG.oevStations = data.stations; saveStations(); }
+            if (data.weatherLocations) { CONFIG.weatherLocations = data.weatherLocations; saveWeatherLocations(); }
+            if (data.calendarId !== undefined) { CONFIG.calendarId = data.calendarId; saveCalendarId(); }
+            if (data.calendarDark !== undefined) { CONFIG.calendarDark = data.calendarDark; saveCalendarDark(); }
+            if (data.spotifyUrl !== undefined) { CONFIG.spotifyUrl = data.spotifyUrl; localStorage.setItem('bigdashimi-spotify-url', data.spotifyUrl); }
+            if (data.countdowns) { CONFIG.countdowns = data.countdowns; saveCountdowns(); }
+            if (data.notes !== undefined) { localStorage.setItem('bigdashimi-notes', data.notes); }
+            alert('✅ Einstellungen importiert! Dashboard wird neu geladen.');
+            location.reload();
+        } catch(err) { alert('❌ Fehler beim Importieren: ' + err.message); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+function resetAllSettings() {
+    if (!confirm('⚠ Wirklich ALLE Einstellungen zur\u00fccksetzen? Das kann nicht r\u00fcckg\u00e4ngig gemacht werden.')) return;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('bigdashimi-'));
+    keys.forEach(k => localStorage.removeItem(k));
+    alert('Einstellungen zur\u00fcckgesetzt. Dashboard wird neu geladen.');
+    location.reload();
+}
+
+// ----- Service Worker -----
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+function saveNotes() { const ta = document.getElementById('notes-textarea'); localStorage.setItem('bigdashimi-notes', ta.value); document.getElementById('notes-chars').textContent = ta.value.length + ' Zeichen'; }
+
+// ----- Settings Panel -----
+let activeTab = 'stations';
+function openSettings() { document.getElementById('settings-overlay').classList.add('active'); switchTab(activeTab); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('active'); }
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    const btn = document.querySelector('.settings-tab[data-tab="' + tab + '"]');
+    if (btn) btn.classList.add('active');
+    ['stations','weather','calendar','spotify','countdown','data'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = t === tab ? 'block' : 'none';
+    });
+    if (tab === 'stations') renderStationList();
+    if (tab === 'weather') renderWeatherLocationList();
+    if (tab === 'calendar') loadCalendarSettings();
+    if (tab === 'spotify') loadSpotifySettings();
+    if (tab === 'countdown') renderCountdownSettings();
+    // Update ARIA
+    document.querySelectorAll('.settings-tab').forEach(t => {
+        t.setAttribute('aria-selected', t.dataset.tab === tab ? 'true' : 'false');
+    });
+}
+
+// -- Stationen --
+function renderStationList() {
+    const list = document.getElementById('station-list');
+    if (CONFIG.oevStations.length === 0) { list.innerHTML = '<div class="loading">Keine Stationen</div>'; return; }
+    list.innerHTML = CONFIG.oevStations.map((s, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🚏 ' + sanitize(s.name) + '</span><span class="settings-station-query">' + sanitize(s.query) + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveStation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveStation(' + i + ',1)" ' + (i === CONFIG.oevStations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeStation(' + i + ')">✕</button></div></div>').join('');
+    updateStationCount();
+}
+function addStation() { const input = document.getElementById('new-station-input'); const val = input.value.trim(); if (!val) return; CONFIG.oevStations.push({ name: val, query: val }); saveStations(); input.value = ''; renderStationList(); }
+function removeStation(i) { CONFIG.oevStations.splice(i, 1); saveStations(); renderStationList(); }
+function moveStation(i, d) { const j = i + d; if (j < 0 || j >= CONFIG.oevStations.length) return; [CONFIG.oevStations[i], CONFIG.oevStations[j]] = [CONFIG.oevStations[j], CONFIG.oevStations[i]]; saveStations(); renderStationList(); }
+function resetStations() { CONFIG.oevStations.length = 0; DEFAULT_STATIONS.forEach(s => CONFIG.oevStations.push({...s})); saveStations(); renderStationList(); }
+function updateStationCount() { const el = document.getElementById('station-count'); if (el) el.textContent = CONFIG.oevStations.length + ' Haltestelle' + (CONFIG.oevStations.length !== 1 ? 'n' : ''); }
+
+// -- Wetter Standorte --
+function renderWeatherLocationList() {
+    const container = document.getElementById('weather-settings-content');
+    const items = CONFIG.weatherLocations.length === 0 ? '<div class="loading">Keine Standorte</div>'
+        : CONFIG.weatherLocations.map((w, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + sanitize(w.city) + '</span><span class="settings-station-query">' + w.lat.toFixed(4) + ', ' + w.lon.toFixed(4) + '</span></div><div class="settings-station-actions"><button class="btn-move" onclick="moveWeatherLocation(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button class="btn-move" onclick="moveWeatherLocation(' + i + ',1)" ' + (i === CONFIG.weatherLocations.length - 1 ? 'disabled' : '') + '>▼</button><button class="btn-delete" onclick="removeWeatherLocation(' + i + ')">✕</button></div></div>').join('');
+    container.innerHTML = '<div class="settings-add"><input type="text" id="weather-city-input" placeholder="Stadt suchen..." onkeydown="if(event.key===\'Enter\') searchWeatherCity()"><button class="btn-add" onclick="searchWeatherCity()">🔍 Suchen</button></div><div id="weather-search-results"></div><div class="settings-section-title">📍 Aktive Standorte (' + CONFIG.weatherLocations.length + ')</div><div class="settings-station-list">' + items + '</div>';
+    updateWeatherCount();
+}
+async function searchWeatherCity() {
+    const input = document.getElementById('weather-city-input'); const query = input.value.trim(); if (!query) return;
+    const el = document.getElementById('weather-search-results'); el.innerHTML = '<div class="loading">Suche...</div>';
+    try {
+        const res = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(query) + '&count=5&language=de');
+        const data = await res.json();
+        if (!data.results || data.results.length === 0) { el.innerHTML = '<div class="error" style="padding:10px 18px">⚠ Keine Stadt gefunden</div>'; return; }
+        el.innerHTML = '<div class="settings-section-title">🔍 Klicke zum Hinzufügen</div>' + data.results.map((r, i) => '<div class="settings-station-item weather-result" onclick="addWeatherLocation(' + i + ')"><div class="settings-station-info"><span class="settings-station-name">🏙 ' + sanitize(r.name) + '</span><span class="settings-station-query">' + sanitize(r.admin1 || '') + ' ' + sanitize(r.country || '') + '</span></div><span style="color:var(--c-primary);font-size:1.2rem;">+</span></div>').join('');
+        window._weatherResults = data.results;
+    } catch(e) { el.innerHTML = '<div class="error" style="padding:10px 18px">⚠ Suche fehlgeschlagen</div>'; }
+}
+function addWeatherLocation(i) { const r = window._weatherResults[i]; if (CONFIG.weatherLocations.some(w => w.city === r.name && Math.abs(w.lat - r.latitude) < 0.01)) return; CONFIG.weatherLocations.push({ city: r.name, lat: r.latitude, lon: r.longitude }); saveWeatherLocations(); renderWeatherLocationList(); }
+function removeWeatherLocation(i) { CONFIG.weatherLocations.splice(i, 1); saveWeatherLocations(); renderWeatherLocationList(); }
+function moveWeatherLocation(i, d) { const j = i + d; if (j < 0 || j >= CONFIG.weatherLocations.length) return; [CONFIG.weatherLocations[i], CONFIG.weatherLocations[j]] = [CONFIG.weatherLocations[j], CONFIG.weatherLocations[i]]; saveWeatherLocations(); renderWeatherLocationList(); }
+function resetWeather() { CONFIG.weatherLocations.length = 0; DEFAULT_WEATHER_LOCATIONS.forEach(w => CONFIG.weatherLocations.push({...w})); saveWeatherLocations(); renderWeatherLocationList(); }
+function updateWeatherCount() { const el = document.getElementById('weather-count'); if (el) el.textContent = CONFIG.weatherLocations.length + ' Standort' + (CONFIG.weatherLocations.length !== 1 ? 'e' : ''); }
+function applySettings() { closeSettings(); updateDepartures(); updateWeather(); updateStationCount(); updateWeatherCount(); updateMap(); }
+
+// -- Kalender Settings --
+function loadCalendarSettings() { const input = document.getElementById('calendar-url-input'); const dark = document.getElementById('calendar-darkmode'); if (input) input.value = decodeURIComponent(CONFIG.calendarId || ''); if (dark) dark.checked = CONFIG.calendarDark; }
+function applyCalendar() { const val = (document.getElementById('calendar-url-input').value || '').trim(); if (val) CONFIG.calendarId = encodeURIComponent(val); CONFIG.calendarDark = document.getElementById('calendar-darkmode') ? document.getElementById('calendar-darkmode').checked : true; saveCalendarId(); saveCalendarDark(); updateCalendar(); closeSettings(); }
+function resetCalendar() { CONFIG.calendarId = DEFAULT_CALENDAR_ID; CONFIG.calendarDark = true; saveCalendarId(); saveCalendarDark(); loadCalendarSettings(); updateCalendar(); }
+
+// -- Spotify Settings --
+function loadSpotifySettings() { const input = document.getElementById('spotify-url-input'); if (input) input.value = CONFIG.spotifyUrl || ''; }
+function spotifyLinkToEmbed(url) { if (!url) return ''; let clean = url.trim().split('?')[0]; if (clean.includes('/embed/')) return clean; return clean.replace('https://open.spotify.com/', 'https://open.spotify.com/embed/'); }
+function applySpotify() { CONFIG.spotifyUrl = (document.getElementById('spotify-url-input').value || '').trim(); localStorage.setItem('bigdashimi-spotify-url', CONFIG.spotifyUrl); updateSpotify(); closeSettings(); }
+function resetSpotify() { CONFIG.spotifyUrl = DEFAULT_SPOTIFY_URL; localStorage.setItem('bigdashimi-spotify-url', DEFAULT_SPOTIFY_URL); loadSpotifySettings(); updateSpotify(); }
+
+// -- Countdown Settings --
+function renderCountdownSettings() {
+    const list = document.getElementById('cd-settings-list');
+    if (CONFIG.countdowns.length === 0) { list.innerHTML = '<div class="loading">Keine Events</div>'; return; }
+    list.innerHTML = CONFIG.countdowns.map((c, i) => '<div class="settings-station-item"><div class="settings-station-info"><span class="settings-station-name">' + sanitize(c.name) + '</span><span class="settings-station-query">' + new Date(c.date).toLocaleDateString('de-CH') + '</span></div><div class="settings-station-actions"><button class="btn-delete" onclick="removeCountdown(' + i + ')">✕</button></div></div>').join('');
+}
+function addCountdown() {
+    const name = document.getElementById('cd-name-input').value.trim();
+    const date = document.getElementById('cd-date-input').value;
+    if (!name || !date) return;
+    CONFIG.countdowns.push({ name, date }); saveCountdowns();
+    document.getElementById('cd-name-input').value = ''; document.getElementById('cd-date-input').value = '';
+    renderCountdownSettings(); updateCountdown();
+}
+function removeCountdown(i) { CONFIG.countdowns.splice(i, 1); saveCountdowns(); renderCountdownSettings(); updateCountdown(); }
+function resetCountdowns() { CONFIG.countdowns.length = 0; DEFAULT_COUNTDOWNS.forEach(c => CONFIG.countdowns.push({...c})); saveCountdowns(); renderCountdownSettings(); updateCountdown(); }
+
+// ===== WIDGETS =====
+
+// ----- Uhrzeit & Datum -----
+function updateClock() {
+    const now = new Date();
+    document.getElementById('header-time').textContent = now.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('header-date').textContent = now.toLocaleDateString('de-CH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('date-day').textContent = now.getDate();
+    document.getElementById('date-month').textContent = now.toLocaleDateString('de-CH', { month: 'long', year: 'numeric' });
+    document.getElementById('date-weekday').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
+}
+
+// ----- Wetter -----
+async function fetchWeather(loc) { try { const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat + '&longitude=' + loc.lon + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1'); if (!res.ok) return null; return await res.json(); } catch(e) { return null; } }
+function renderWeatherCard(data, cityName) {
+    if (!data || !data.current) return '<div class="weather-section"><div class="weather-city-header">🏙 ' + sanitize(cityName) + '</div><div class="error">⚠ Nicht verfügbar</div></div>';
+    const c = data.current;
+    let sunInfo = '';
+    if (data.daily && data.daily.sunrise && data.daily.sunset) {
+        const sr = new Date(data.daily.sunrise[0]).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+        const ss = new Date(data.daily.sunset[0]).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+        sunInfo = '<span>🌅 ' + sr + '</span><span>🌇 ' + ss + '</span>';
+    }
+    return '<div class="weather-section"><div class="weather-city-header">🏙 ' + sanitize(cityName) + '</div><div class="weather-main"><div class="weather-icon">' + getWeatherEmoji(c.weather_code) + '</div><div><div class="weather-temp">' + Math.round(c.temperature_2m) + '°</div><div class="weather-desc">' + sanitize(getWeatherDescription(c.weather_code)) + '</div></div></div><div class="weather-details"><span>💧 ' + c.relative_humidity_2m + '%</span><span>🌬 ' + Math.round(c.wind_speed_10m) + ' km/h</span><span>🌡 Gefühlt ' + Math.round(c.apparent_temperature) + '°</span>' + sunInfo + '</div></div>';
+}
+async function updateWeather() {
+    const el = document.getElementById('weather-content');
+    if (CONFIG.weatherLocations.length === 0) { el.innerHTML = '<div class="loading">Keine Standorte – ⚙️</div>'; return; }
+    try {
+        const results = await Promise.all(CONFIG.weatherLocations.map(loc => fetchWeather(loc)));
+        let html = ''; CONFIG.weatherLocations.forEach((loc, i) => { html += renderWeatherCard(results[i], loc.city); }); el.innerHTML = html;
+        weatherLoaded = true;
+        // Wetter-Animation basierend auf erstem Standort
+        if (results[0] && results[0].current) {
+            updateWeatherAnimation(results[0].current.weather_code);
+        }
+    } catch(e) { el.innerHTML = '<div class="error">⚠ Wetter nicht verfügbar</div>'; }
+}
+function getWeatherEmoji(code) { if (code === 0) return '☀️'; if (code <= 3) return '⛅'; if (code <= 48) return '🌫'; if (code <= 57) return '🌧'; if (code <= 65) return '🌧'; if (code <= 67) return '🌨'; if (code <= 77) return '❄️'; if (code <= 82) return '🌧'; if (code <= 86) return '❄️'; if (code <= 99) return '⛈'; return '🌤'; }
+function getWeatherDescription(code) { const d = { 0:'Klar', 1:'Überwiegend klar', 2:'Teilweise bewölkt', 3:'Bewölkt', 45:'Nebel', 48:'Reifnebel', 51:'Leichter Nieselregen', 53:'Nieselregen', 55:'Starker Nieselregen', 61:'Leichter Regen', 63:'Regen', 65:'Starker Regen', 71:'Leichter Schnee', 73:'Schneefall', 75:'Starker Schneefall', 80:'Regenschauer', 81:'Regenschauer', 82:'Starke Regenschauer', 85:'Schneeschauer', 86:'Starke Schneeschauer', 95:'Gewitter', 96:'Gewitter mit Hagel', 99:'Gewitter mit starkem Hagel' }; return d[code] || 'Unbekannt'; }
+
+// ----- ÖV Abfahrten -----
+async function fetchStation(station) { try { const res = await fetch('https://fahrplan.search.ch/api/stationboard.json?stop=' + encodeURIComponent(station.query) + '&limit=' + CONFIG.oevLimit); if (!res.ok) return null; const data = await res.json(); return { station: data.stop ? { name: data.stop.name } : null, stationboard: (data.connections || []).map(c => ({ category: c['*G'] || c.type || '', number: c.line || c['*L'] || '?', name: c.line || '', to: c.terminal ? c.terminal.name : '?', stop: { departure: c.time } })) }; } catch(e) { return null; } }
+function renderDepartures(data, stationName) {
+    if (!data || !data.stationboard || data.stationboard.length === 0) return '<div class="station-section"><div class="station-header">🚏 ' + sanitize(stationName) + '</div><div class="loading">Keine Abfahrten</div></div>';
+    const rows = data.stationboard.map(dep => { const depTime = new Date(dep.stop.departure); const diffMin = Math.round((depTime - new Date()) / 60000); const timeStr = depTime.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); const cat = (dep.category || '').toUpperCase(); let lineClass = ''; if (cat === 'B' || cat === 'BUS' || cat === 'NFB') lineClass = 'bus'; if (cat === 'T' || cat === 'TRAM' || cat === 'NFT') lineClass = 'tram'; const line = dep.number || dep.name || '?'; const countdown = diffMin <= 0 ? 'jetzt' : diffMin + "'"; return '<div class="departure-item"><span class="dep-line ' + lineClass + '">' + sanitize(String(line)) + '</span><span class="dep-destination">' + sanitize(dep.to) + '</span><span class="dep-time">' + timeStr + '</span><span class="dep-countdown">' + countdown + '</span></div>'; }).join('');
+    return '<div class="station-section"><div class="station-header">🚏 ' + sanitize(data.station ? data.station.name : stationName) + '</div>' + rows + '</div>';
+}
+async function updateDepartures() { const el = document.getElementById('departures-list'); try { const results = await Promise.all(CONFIG.oevStations.map(s => fetchStation(s))); let html = ''; CONFIG.oevStations.forEach((s, i) => { html += renderDepartures(results[i], s.name); }); el.innerHTML = html; } catch(e) { el.innerHTML = '<div class="error">⚠ ÖV nicht verfügbar</div>'; } }
+
+// ----- Kalender -----
+function updateCalendar() { const el = document.getElementById('calendar-content'); if (!CONFIG.calendarId) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const colorMode = CONFIG.calendarDark ? '&color=%2300d4ff&bgcolor=%23121212' : ''; const calUrl = 'https://calendar.google.com/calendar/embed?src=' + CONFIG.calendarId + '&ctz=Europe%2FZurich&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0' + colorMode; if (!isValidUrl(calUrl, ['google.com'])) { el.innerHTML = '<div class="error">⚠ Ungültige Kalender-URL</div>'; return; } el.innerHTML = '<iframe src="' + calUrl + '" frameborder="0" scrolling="no" class="calendar-iframe" title="Google Kalender"></iframe>'; }
+
+// ----- Spotify -----
+function updateSpotify() { const el = document.getElementById('spotify-content'); if (!CONFIG.spotifyUrl) { el.innerHTML = '<div class="loading">Nicht konfiguriert – ⚙️</div>'; return; } const embedUrl = spotifyLinkToEmbed(CONFIG.spotifyUrl); if (!embedUrl || !isValidUrl(embedUrl, ['spotify.com'])) { el.innerHTML = '<div class="error">⚠ Ungültiger Link</div>'; return; } el.innerHTML = '<iframe src="' + embedUrl + '?theme=0" class="spotify-iframe" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify Player"></iframe>'; }
+
+// ----- Speed Test -----
+let speedTestRunning = false;
+async function runSpeedTest() {
+    if (speedTestRunning) return; speedTestRunning = true;
+    const btn = document.getElementById('btn-speedtest'); const valueEl = document.getElementById('speed-value'); const pingEl = document.getElementById('speed-ping'); const statusEl = document.getElementById('speed-status');
+    btn.textContent = '⏳ Teste...'; btn.disabled = true; statusEl.textContent = 'Messe...'; valueEl.textContent = '...'; pingEl.textContent = '...';
+    try {
+        const pings = []; for (let i = 0; i < 3; i++) { const s = performance.now(); await fetch('https://www.google.com/favicon.ico?_=' + Date.now(), { mode: 'no-cors', cache: 'no-store' }); pings.push(performance.now() - s); }
+        pingEl.textContent = Math.round(pings.reduce((a, b) => a + b) / pings.length) + ' ms';
+        const testUrls = ['https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png','https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/300px-PNG_transparency_demonstration_1.png'];
+        let totalBytes = 0, totalTime = 0;
+        for (const url of testUrls) { const s = performance.now(); try { const r = await fetch(url + '?_=' + Date.now(), { cache: 'no-store' }); const b = await r.blob(); totalBytes += b.size; totalTime += (performance.now() - s) / 1000; } catch(e) {} }
+        if (totalTime > 0 && totalBytes > 0) { const mbps = (totalBytes * 8) / totalTime / 1000000; valueEl.textContent = mbps.toFixed(1); if (mbps > 50) { statusEl.textContent = '🟢 Schnell'; statusEl.style.color = '#00ff88'; } else if (mbps > 10) { statusEl.textContent = '🟡 Gut'; statusEl.style.color = '#ffa500'; } else { statusEl.textContent = '🔴 Langsam'; statusEl.style.color = '#ff4444'; } }
+        else { valueEl.textContent = '?'; statusEl.textContent = '⚠ Fehler'; statusEl.style.color = '#ff4444'; }
+    } catch(e) { valueEl.textContent = '?'; pingEl.textContent = '?'; statusEl.textContent = '⚠ Fehler'; statusEl.style.color = '#ff4444'; }
+    btn.textContent = '▶ Erneut'; btn.disabled = false; speedTestRunning = false;
+}
+
+// ----- Zitat des Tages -----
+const FALLBACK_QUOTES = [
+    { text: 'Der einzige Weg, grossartige Arbeit zu leisten, ist zu lieben, was man tut.', author: 'Steve Jobs' },
+    { text: 'Das Leben ist das, was passiert, während du eifrig dabei bist, andere Pläne zu machen.', author: 'John Lennon' },
+    { text: 'Es ist nicht genug zu wissen – man muss auch anwenden.', author: 'Johann Wolfgang von Goethe' },
+    { text: 'Der beste Zeitpunkt einen Baum zu pflanzen war vor 20 Jahren. Der zweitbeste ist jetzt.', author: 'Chinesisches Sprichwort' },
+    { text: 'Sei du selbst die Veränderung, die du dir wünschst für diese Welt.', author: 'Mahatma Gandhi' },
+    { text: 'Wer kämpft, kann verlieren. Wer nicht kämpft, hat schon verloren.', author: 'Bertolt Brecht' },
+    { text: 'Die Zukunft gehört denen, die an die Schönheit ihrer Träume glauben.', author: 'Eleanor Roosevelt' },
+    { text: 'Erfolg ist nicht endgültig, Scheitern ist nicht fatal: Was zählt, ist der Mut weiterzumachen.', author: 'Winston Churchill' },
+    { text: 'Jeder Tag ist eine neue Chance, das zu tun, was du möchtest.', author: 'Friedrich Schiller' },
+    { text: 'Man muss das Unmögliche versuchen, um das Mögliche zu erreichen.', author: 'Hermann Hesse' },
+];
+async function updateQuote() {
+    const el = document.getElementById('quote-content');
+    try {
+        const res = await fetch('https://dummyjson.com/quotes/random');
+        if (res.ok) {
+            const data = await res.json();
+            el.innerHTML = '<div class="quote-text">«' + sanitize(data.quote) + '»</div><div class="quote-author">— ' + sanitize(data.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
+            return;
+        }
+    } catch(e) {}
+    const q = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+    el.innerHTML = '<div class="quote-text">«' + sanitize(q.text) + '»</div><div class="quote-author">— ' + sanitize(q.author) + '</div><button class="btn-new-quote" onclick="updateQuote()">🔄 Neues Zitat</button>';
+}
+
+// ----- Countdown -----
+function updateCountdown() {
+    const el = document.getElementById('countdown-content');
+    const now = new Date(); now.setHours(0,0,0,0);
+    const sorted = CONFIG.countdowns.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (sorted.length === 0) { el.innerHTML = '<div class="loading">Keine Events – ⚙️ zum Hinzufügen</div>'; return; }
+    el.innerHTML = sorted.map(c => {
+        const target = new Date(c.date); target.setHours(0,0,0,0);
+        const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+        let cls = '', val = '';
+        if (diff === 0) { val = '🎉 Heute!'; cls = 'today'; }
+        else if (diff < 0) { val = 'Vorbei (' + Math.abs(diff) + 'd)'; cls = ''; }
+        else if (diff <= 3) { val = diff + ' Tag' + (diff !== 1 ? 'e' : ''); cls = 'urgent'; }
+        else if (diff <= 30) { val = diff + ' Tage'; cls = ''; }
+        else { const m = Math.floor(diff / 30); val = m + ' Monat' + (m !== 1 ? 'e' : '') + ' ' + (diff % 30) + 'd'; cls = ''; }
+        return '<div class="countdown-item"><span class="countdown-label">' + sanitize(c.name) + '</span><span class="countdown-value ' + cls + '">' + val + '</span></div>';
+    }).join('');
+}
+
+// ----- Mondphase -----
+function getMoonPhase(date) {
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    let yr = y, mo = m;
+    if (mo < 3) { yr--; mo += 12; }
+    const c = Math.floor(365.25 * (yr + 4716));
+    const e = Math.floor(30.6001 * (mo + 1));
+    const jd = d + c + e - 1524.5;
+    let b = ((jd - 2451550.1) / 29.530588853) % 1;
+    if (b < 0) b += 1;
+    return b;
+}
+function updateMoon() {
+    const el = document.getElementById('moon-content');
+    const phase = getMoonPhase(new Date());
+    let emoji, name;
+    if (phase < 0.03 || phase >= 0.97) { emoji = '🌑'; name = 'Neumond'; }
+    else if (phase < 0.22) { emoji = '🌒'; name = 'Zunehmende Sichel'; }
+    else if (phase < 0.28) { emoji = '🌓'; name = 'Erstes Viertel'; }
+    else if (phase < 0.47) { emoji = '🌔'; name = 'Zunehmender Mond'; }
+    else if (phase < 0.53) { emoji = '🌕'; name = 'Vollmond'; }
+    else if (phase < 0.72) { emoji = '🌖'; name = 'Abnehmender Mond'; }
+    else if (phase < 0.78) { emoji = '🌗'; name = 'Letztes Viertel'; }
+    else { emoji = '🌘'; name = 'Abnehmende Sichel'; }
+    const illum = Math.round(phase < 0.5 ? phase * 200 : (1 - phase) * 200);
+    el.innerHTML = '<div class="moon-emoji">' + emoji + '</div><div class="moon-name">' + name + '</div><div class="moon-details"><span>🔆 ' + illum + '% beleuchtet</span><span>📅 Tag ' + Math.round(phase * 29.5) + ' / 29.5</span></div>';
+}
+
+// ----- Mini-Karte -----
+function updateMap() {
+    const el = document.getElementById('map-content');
+    const lat = CONFIG.weatherLocations.length > 0 ? CONFIG.weatherLocations[0].lat : DEFAULT_MAP_LAT;
+    const lon = CONFIG.weatherLocations.length > 0 ? CONFIG.weatherLocations[0].lon : DEFAULT_MAP_LON;
+    const mapUrl = 'https://www.openstreetmap.org/export/embed.html?bbox=' + (lon - 0.02) + '%2C' + (lat - 0.01) + '%2C' + (lon + 0.02) + '%2C' + (lat + 0.01) + '&layer=mapnik&marker=' + lat + '%2C' + lon;
+    if (!isValidUrl(mapUrl, ['openstreetmap.org'])) { el.innerHTML = '<div class="error">⚠ Ungültige Karten-URL</div>'; return; }
+    el.innerHTML = '<iframe class="map-iframe" src="' + mapUrl + '" loading="lazy" title="OpenStreetMap Karte"></iframe>';
+}
+
+// ----- Notizen -----
+function initNotes() {
+    const ta = document.getElementById('notes-textarea');
+    ta.value = loadNotes();
+    document.getElementById('notes-chars').textContent = ta.value.length + ' Zeichen';
+}
+
+// ----- News Ticker -----
+async function updateNews() {
+    const el = document.getElementById('news-ticker');
+    try {
+        let allItems = [];
+        const feedPromises = NEWS_FEEDS.map(async (feed) => {
+            try {
+                const text = await fetchWithProxy(feed.url);
+                if (!text) return;
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, 'text/xml');
+                // Atom-Format (Watson) oder RSS-Format
+                if (feed.format === 'atom') {
+                    const entries = xml.querySelectorAll('entry');
+                    entries.forEach((entry, i) => {
+                        if (i < 5) {
+                            const title = entry.querySelector('title') ? entry.querySelector('title').textContent : '';
+                            const linkEl = entry.querySelector('link[rel="alternate"]') || entry.querySelector('link');
+                            const link = linkEl ? (linkEl.getAttribute('href') || '#') : '#';
+                            allItems.push({ source: feed.name, title, link });
+                        }
+                    });
+                } else {
+                    const items = xml.querySelectorAll('item');
+                    items.forEach((item, i) => {
+                        if (i < 5) {
+                            const title = item.querySelector('title') ? item.querySelector('title').textContent : '';
+                            const link = item.querySelector('link') ? item.querySelector('link').textContent : '#';
+                            allItems.push({ source: feed.name, title, link });
+                        }
+                    });
+                }
+            } catch(e) { console.warn('News feed error:', feed.name, e); }
+        });
+        await Promise.all(feedPromises);
+        if (allItems.length === 0) {
+            el.innerHTML = '<span class="news-item"><span class="news-source">📰</span> News werden geladen...</span>';
+            // Retry nach 15s
+            setTimeout(updateNews, 15000);
+            return;
+        }
+        for (let i = allItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [allItems[i], allItems[j]] = [allItems[j], allItems[i]]; }
+        // XSS-sicherer Aufbau mit DOM-Elementen
+        el.innerHTML = '';
+        allItems.forEach((item, idx) => {
+            if (idx > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'news-separator';
+                sep.textContent = '│';
+                el.appendChild(sep);
+            }
+            const span = document.createElement('span');
+            span.className = 'news-item';
+            const src = document.createElement('span');
+            src.className = 'news-source';
+            src.textContent = item.source;
+            const a = document.createElement('a');
+            a.href = item.link;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = item.title;
+            span.appendChild(src);
+            span.appendChild(a);
+            el.appendChild(span);
+        });
+    } catch(e) {
+        el.innerHTML = '<span class="news-item"><span class="news-source">📰</span> News nicht verfügbar</span>';
+    }
+}
+
+// ----- Status -----
+function updateStatus() { document.getElementById('last-update').textContent = new Date().toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }); }
+
+// ===== DYNAMISCHER HINTERGRUND (Tageszeit) =====
+let currentWeatherCode = 0;
+
+function getTimeOfDayTheme() {
+    const h = new Date().getHours();
+    // Nacht: 22-5, Dämmerung: 5-7 & 19-22, Tag: 7-17, Abend: 17-19
+    if (h >= 5 && h < 7)   return { bg: 'linear-gradient(135deg, #0c1445, #1a3a6b, #3a6090, #d4a574)', header: 'rgba(26,58,107,0.88)', label: 'Morgendämmerung' };
+    if (h >= 7 && h < 10)  return { bg: 'linear-gradient(135deg, #1a3355, #2a5080, #4a7ab0, #87CEEB)', header: 'rgba(42,80,128,0.88)', label: 'Morgen' };
+    if (h >= 10 && h < 15) return { bg: 'linear-gradient(135deg, #1a4a7a, #2a6aaa, #4a90d0, #6ab0e8)', header: 'rgba(42,106,170,0.88)', label: 'Mittag' };
+    if (h >= 15 && h < 17) return { bg: 'linear-gradient(135deg, #1a3d6d, #2a5a90, #4a80b8, #5a95cc)', header: 'rgba(42,90,144,0.88)', label: 'Nachmittag' };
+    if (h >= 17 && h < 19) return { bg: 'linear-gradient(135deg, #1a1040, #3a1a50, #6a3070, #d4726a)', header: 'rgba(58,26,80,0.88)', label: 'Abend' };
+    if (h >= 19 && h < 22) return { bg: 'linear-gradient(135deg, #0a0a25, #151040, #1e1555, #2a1a6a)', header: 'rgba(21,16,64,0.88)', label: 'Abenddämmerung' };
+    return { bg: 'linear-gradient(135deg, #020210, #060620, #0a0a35, #0e0e45)', header: 'rgba(6,6,32,0.88)', label: 'Nacht' };
+}
+
+function updateDynamicBackground() {
+    const theme = getTimeOfDayTheme();
+    document.body.style.background = theme.bg;
+    document.querySelector('.dashboard-header').style.background = theme.header;
+    // Tageszeit-Label im Datum anzeigen
+    const dateEl = document.querySelector('.header-date');
+    if (dateEl) {
+        const now = new Date();
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        dateEl.textContent = now.toLocaleDateString('de-CH', opts) + ' · ' + theme.label;
+    }
+}
+
+// ===== WETTER-ANIMATIONEN (Canvas) =====
+const weatherCanvas = { canvas: null, ctx: null, particles: [], animId: null, width: 0, height: 0 };
+
+function initWeatherCanvas() {
+    weatherCanvas.canvas = document.getElementById('weather-canvas');
+    weatherCanvas.ctx = weatherCanvas.canvas.getContext('2d');
+    function resize() {
+        weatherCanvas.width = window.innerWidth;
+        weatherCanvas.height = window.innerHeight;
+        weatherCanvas.canvas.width = weatherCanvas.width;
+        weatherCanvas.canvas.height = weatherCanvas.height;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+}
+
+function spawnParticles(type, count) {
+    weatherCanvas.particles = [];
+    for (let i = 0; i < count; i++) {
+        const p = { x: Math.random() * weatherCanvas.width, y: Math.random() * weatherCanvas.height };
+        if (type === 'rain') {
+            p.speed = 6 + Math.random() * 8;
+            p.length = 12 + Math.random() * 18;
+            p.opacity = 0.15 + Math.random() * 0.3;
+            p.wind = 1.5 + Math.random() * 2;
+        } else if (type === 'snow') {
+            p.speed = 0.5 + Math.random() * 1.5;
+            p.radius = 1 + Math.random() * 3;
+            p.opacity = 0.3 + Math.random() * 0.5;
+            p.wobble = Math.random() * Math.PI * 2;
+            p.wobbleSpeed = 0.01 + Math.random() * 0.03;
+        } else if (type === 'fog') {
+            p.radius = 80 + Math.random() * 160;
+            p.opacity = 0.02 + Math.random() * 0.05;
+            p.speedX = (Math.random() - 0.5) * 0.3;
+            p.speedY = (Math.random() - 0.5) * 0.1;
+        }
+        p.type = type;
+        weatherCanvas.particles.push(p);
+    }
+}
+
+function animateWeatherParticles() {
+    const ctx = weatherCanvas.ctx;
+    const W = weatherCanvas.width;
+    const H = weatherCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    weatherCanvas.particles.forEach(p => {
+        if (p.type === 'rain') {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.wind, p.y + p.length);
+            ctx.strokeStyle = 'rgba(120, 180, 255, ' + p.opacity + ')';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            p.x += p.wind;
+            p.y += p.speed;
+            if (p.y > H) { p.y = -p.length; p.x = Math.random() * W; }
+            if (p.x > W) p.x = 0;
+        } else if (p.type === 'snow') {
+            p.wobble += p.wobbleSpeed;
+            ctx.beginPath();
+            ctx.arc(p.x + Math.sin(p.wobble) * 1.5, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(220, 230, 255, ' + p.opacity + ')';
+            ctx.fill();
+            p.y += p.speed;
+            p.x += Math.sin(p.wobble) * 0.5;
+            if (p.y > H) { p.y = -p.radius * 2; p.x = Math.random() * W; }
+        } else if (p.type === 'fog') {
+            ctx.beginPath();
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+            grad.addColorStop(0, 'rgba(180, 190, 200, ' + p.opacity + ')');
+            grad.addColorStop(1, 'rgba(180, 190, 200, 0)');
+            ctx.fillStyle = grad;
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x > W + p.radius) p.x = -p.radius;
+            if (p.x < -p.radius) p.x = W + p.radius;
+            if (p.y > H + p.radius) p.y = -p.radius;
+        }
+    });
+
+    weatherCanvas.animId = requestAnimationFrame(animateWeatherParticles);
+}
+
+function triggerLightning() {
+    const overlay = document.getElementById('lightning-overlay');
+    overlay.style.animation = 'lightning 0.6s ease';
+    setTimeout(() => { overlay.style.animation = 'none'; }, 700);
+}
+
+function updateWeatherAnimation(weatherCode) {
+    currentWeatherCode = weatherCode;
+    if (weatherCanvas.animId) cancelAnimationFrame(weatherCanvas.animId);
+    weatherCanvas.particles = [];
+
+    if (!weatherCode && weatherCode !== 0) return;
+
+    // Regen (51-67, 80-82)
+    if ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82)) {
+        const intensity = weatherCode >= 63 || weatherCode >= 81 ? 200 : weatherCode >= 53 ? 120 : 60;
+        spawnParticles('rain', intensity);
+        animateWeatherParticles();
+    }
+    // Schnee (71-77, 85-86)
+    else if ((weatherCode >= 71 && weatherCode <= 77) || (weatherCode >= 85 && weatherCode <= 86)) {
+        const intensity = weatherCode >= 75 || weatherCode >= 86 ? 150 : weatherCode >= 73 ? 80 : 40;
+        spawnParticles('snow', intensity);
+        animateWeatherParticles();
+    }
+    // Gewitter (95-99)
+    else if (weatherCode >= 95 && weatherCode <= 99) {
+        spawnParticles('rain', 250);
+        animateWeatherParticles();
+        // Blitz-Intervall
+        if (window._lightningInterval) clearInterval(window._lightningInterval);
+        window._lightningInterval = setInterval(() => {
+            if (Math.random() < 0.4) triggerLightning();
+        }, 3000);
+    }
+    // Nebel (45, 48)
+    else if (weatherCode >= 45 && weatherCode <= 48) {
+        spawnParticles('fog', 20);
+        animateWeatherParticles();
+    }
+    // Klar / bewölkt → keine Animation
+    else {
+        const ctx = weatherCanvas.ctx;
+        ctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+        if (window._lightningInterval) { clearInterval(window._lightningInterval); window._lightningInterval = null; }
+    }
+}
+
+// ===== MARKT & HARDWARE PREISE (automatisch) =====
+
+// Crypto-Preise (CoinGecko - gratis, kein Key)
+async function fetchCrypto() {
+    const cached = cacheGet('crypto');
+    if (cached) return cached;
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,chf&include_24hr_change=true');
+        if (!res.ok) return null;
+        const data = await res.json();
+        cacheSet('crypto', data, 5 * 60 * 1000);
+        return data;
+    } catch(e) { return null; }
+}
+
+// Crypto 7-Tage Sparkline (CoinGecko market_chart - gratis)
+async function fetchCryptoSparkline(coinId) {
+    const cached = cacheGet('sparkline-' + coinId);
+    if (cached) return cached;
+    try {
+        const res = await fetch('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=7&interval=daily');
+        if (!res.ok) return null;
+        const data = await res.json();
+        const prices = data.prices ? data.prices.map(p => p[1]) : null;
+        if (prices) cacheSet('sparkline-' + coinId, prices, 10 * 60 * 1000);
+        return prices;
+    } catch(e) { return null; }
+}
+
+function buildSparklineSVG(prices, width, height, color) {
+    if (!prices || prices.length < 2) return '';
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+    const points = prices.map((p, i) => {
+        const x = (i / (prices.length - 1)) * width;
+        const y = height - ((p - min) / range) * (height - 2) - 1;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    const first = prices[0], last = prices[prices.length - 1];
+    const lineColor = last >= first ? '#00ff88' : '#ff4444';
+    const fillPts = points.join(' ') + ' ' + width + ',' + height + ' 0,' + height;
+    return '<svg width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '">'
+        + '<defs><linearGradient id="sg' + color + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + lineColor + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + lineColor + '" stop-opacity="0"/></linearGradient></defs>'
+        + '<polygon points="' + fillPts + '" fill="url(#sg' + color + ')"/>'
+        + '<polyline points="' + points.join(' ') + '" fill="none" stroke="' + lineColor + '" stroke-width="1.5" stroke-linejoin="round"/>'
+        + '</svg>';
+}
+
+// Währungskurse (Frankfurter API - gratis, kein Key, unbegrenzt)
+async function fetchCurrencyRates() {
+    const cached = cacheGet('currency-rates');
+    if (cached) return cached;
+    try {
+        const res = await fetch('https://api.frankfurter.dev/v1/latest?from=CHF&to=EUR,USD,GBP,CNY');
+        if (!res.ok) return null;
+        const data = await res.json();
+        cacheSet('currency-rates', data, 10 * 60 * 1000);
+        return data;
+    } catch(e) { return null; }
+}
+
+// Währungskurse Veränderung (gestern vs heute)
+async function fetchCurrencyChange() {
+    const cached = cacheGet('currency-change');
+    if (cached) return cached;
+    try {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const res = await fetch('https://api.frankfurter.dev/v1/' + yesterday + '?from=CHF&to=EUR,USD,GBP,CNY');
+        if (!res.ok) return null;
+        const data = await res.json();
+        cacheSet('currency-change', data, 30 * 60 * 1000);
+        return data;
+    } catch(e) { return null; }
+}
+
+// Halbleiter & Tech-Aktien (Yahoo Finance via CORS-Proxy)
+async function fetchTechStocks() {
+    const cached = cacheGet('stocks');
+    if (cached) return cached;
+    try {
+        const symbols = ['NVDA', 'AMD', 'INTC', 'TSM', 'MU'];
+        const results = {};
+        const fetches = symbols.map(async sym => {
+            const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=5d';
+            let data = null;
+            // Versuche direkt (falls CORS erlaubt), dann via Proxy-Kette
+            try {
+                const res = await fetch(url);
+                if (res.ok) data = await res.json();
+            } catch(e) {}
+            if (!data) {
+                for (const makeProxy of CORS_PROXIES) {
+                    try {
+                        const res = await fetch(makeProxy(url));
+                        if (res.ok) { data = await res.json(); break; }
+                    } catch(e) {}
+                }
+            }
+            if (data && data.chart && data.chart.result) {
+                const meta = data.chart.result[0].meta;
+                const prev = meta.chartPreviousClose || meta.previousClose;
+                const price = meta.regularMarketPrice;
+                const changePct = prev ? ((price - prev) / prev * 100) : 0;
+                results[sym] = {
+                    price: price,
+                    currency: meta.currency || 'USD',
+                    change: changePct,
+                    yrHi: meta.fiftyTwoWeekHigh || null,
+                    yrLo: meta.fiftyTwoWeekLow || null
+                };
+            }
+        });
+        await Promise.all(fetches);
+        return Object.keys(results).length > 0 ? (cacheSet('stocks', results, 5 * 60 * 1000), results) : null;
+    } catch(e) { return null; }
+}
+
+function formatChange(pct) {
+    if (pct === null || pct === undefined || isNaN(pct)) return { text: '—', cls: 'neutral' };
+    const p = parseFloat(pct).toFixed(1);
+    if (p > 0) return { text: '↗ +' + p + '%', cls: 'up' };
+    if (p < 0) return { text: '↘ ' + p + '%', cls: 'down' };
+    return { text: '→ 0.0%', cls: 'neutral' };
+}
+
+function formatPrice(val, currency) {
+    if (val === null || val === undefined) return '—';
+    if (val >= 1000) return currency + Math.round(val).toLocaleString('de-CH');
+    if (val >= 1) return currency + val.toFixed(2);
+    return currency + val.toFixed(4);
+}
+
+async function updateMarketPrices() {
+    const el = document.getElementById('hw-content');
+    let html = '';
+
+    // Alle Daten parallel laden
+    const [stocks, crypto, rates, prevRates, btcSparkline, ethSparkline] = await Promise.all([
+        fetchTechStocks(),
+        fetchCrypto(),
+        fetchCurrencyRates(),
+        fetchCurrencyChange(),
+        fetchCryptoSparkline('bitcoin'),
+        fetchCryptoSparkline('ethereum')
+    ]);
+
+    // 1. Halbleiter & Tech-Aktien
+    html += '<div class="hw-section"><div class="hw-section-title">🏭 Halbleiter-Aktien (DRAM/GPU/CPU)</div>';
+    const stockNames = {
+        'NVDA': { name: 'Nvidia', icon: '🟢', desc: 'GPU' },
+        'AMD': { name: 'AMD', icon: '🔴', desc: 'CPU/GPU' },
+        'INTC': { name: 'Intel', icon: '🔵', desc: 'CPU' },
+        'TSM': { name: 'TSMC', icon: '⚪', desc: 'Fertigung' },
+        'MU': { name: 'Micron', icon: '🟡', desc: 'DRAM/NAND' }
+    };
+    if (stocks) {
+        for (const [sym, info] of Object.entries(stockNames)) {
+            if (stocks[sym]) {
+                const s = stocks[sym];
+                const ch = formatChange(s.change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + info.icon + '</span>' + info.name + ' <span style="color:#555;font-size:0.6rem">(' + info.desc + ')</span></span>'
+                    + '<span class="hw-price">' + formatPrice(s.price, '$') + '</span>'
+                    + '<span class="hw-change ' + ch.cls + '">' + ch.text + '</span>'
+                    + '</div>';
+                // 52-Wochen Range Bar
+                if (s.yrLo && s.yrHi && s.yrHi > s.yrLo) {
+                    const pct = ((s.price - s.yrLo) / (s.yrHi - s.yrLo) * 100).toFixed(0);
+                    html += '<div class="hw-range">'
+                        + '<span class="hw-range-label">' + formatPrice(s.yrLo, '$') + '</span>'
+                        + '<div class="hw-range-bar"><div class="hw-range-fill" style="width:100%"></div><div class="hw-range-dot" style="left:' + pct + '%"></div></div>'
+                        + '<span class="hw-range-label">' + formatPrice(s.yrHi, '$') + '</span>'
+                        + '</div>';
+                }
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Aktiendaten laden...</span></div>';
+    }
+    html += '</div>';
+
+    // 2. Crypto (GPU-Markt Indikator)
+    html += '<div class="hw-section"><div class="hw-section-title">₿ Crypto (GPU-Nachfrage Indikator)</div>';
+    const sparklines = { bitcoin: btcSparkline, ethereum: ethSparkline };
+    if (crypto) {
+        const coins = [
+            { key: 'bitcoin', name: 'Bitcoin', icon: '₿' },
+            { key: 'ethereum', name: 'Ethereum', icon: '⟠' }
+        ];
+        for (const coin of coins) {
+            if (crypto[coin.key]) {
+                const c = crypto[coin.key];
+                const ch24 = formatChange(c.usd_24h_change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + coin.icon + '</span>' + coin.name + '</span>'
+                    + '<span class="hw-price">' + formatPrice(c.usd, '$') + '</span>'
+                    + '<span class="hw-change ' + ch24.cls + '">' + ch24.text + '</span>'
+                    + '</div>';
+                // 7-Tage Sparkline
+                if (sparklines[coin.key]) {
+                    html += '<div class="hw-sparkline">' + buildSparklineSVG(sparklines[coin.key], 160, 20, coin.key) + '</div>';
+                }
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Crypto laden...</span></div>';
+    }
+    html += '</div>';
+
+    // 3. Währungen (Import-Preise)
+    html += '<div class="hw-section"><div class="hw-section-title">💱 Währungen (Import-Kosten)</div>';
+    if (rates && rates.rates) {
+        const currencies = [
+            { code: 'EUR', icon: '🇪🇺', name: 'Euro' },
+            { code: 'USD', icon: '🇺🇸', name: 'Dollar' },
+            { code: 'GBP', icon: '🇬🇧', name: 'Pfund' },
+            { code: 'CNY', icon: '🇨🇳', name: 'Yuan' }
+        ];
+        for (const cur of currencies) {
+            if (rates.rates[cur.code]) {
+                const rate = rates.rates[cur.code];
+                let change = null;
+                if (prevRates && prevRates.rates && prevRates.rates[cur.code]) {
+                    change = ((rate - prevRates.rates[cur.code]) / prevRates.rates[cur.code] * 100);
+                }
+                const ch = formatChange(change);
+                html += '<div class="hw-row">'
+                    + '<span class="hw-name"><span class="hw-icon">' + cur.icon + '</span>CHF/' + cur.code + '</span>'
+                    + '<span class="hw-price">' + rate.toFixed(4) + '</span>'
+                    + '<span class="hw-change ' + ch.cls + '">' + ch.text + '</span>'
+                    + '</div>';
+            }
+        }
+    } else {
+        html += '<div class="hw-row"><span class="hw-name" style="color:#666">⏳ Kurse laden...</span></div>';
+    }
+    html += '</div>';
+
+    // Info
+    html += '<div class="hw-updated">⟳ ' + new Date().toLocaleTimeString('de-CH', {hour:'2-digit',minute:'2-digit'}) + ' · Auto-Refresh 10 Min · Micron/Samsung = DRAM-Preis · CHF/USD = Import-Kosten</div>';
+
+    el.innerHTML = html;
+}
+
+// ----- Globaler Error-Handler -----
+const _errors = [];
+window.onerror = function(msg, src, line) {
+    const short = String(msg).slice(0, 60);
+    _errors.push({ time: new Date(), msg: short });
+    console.error('[bigDashimi]', msg, src, line);
+    const row = document.getElementById('error-row');
+    const el = document.getElementById('dashboard-errors');
+    if (row && el) {
+        row.style.display = '';
+        el.textContent = _errors.length + 'x — ' + short;
+        el.title = _errors.map(e => e.time.toLocaleTimeString('de-CH') + ': ' + e.msg).join('\n');
+    }
+};
+window.onunhandledrejection = function(e) {
+    const msg = e.reason ? String(e.reason.message || e.reason).slice(0, 60) : 'Promise rejected';
+    window.onerror(msg, '', 0);
+};
+
+// ----- Init -----
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ===== Smoke-Tests (nur in Dev/Konsole sichtbar) =====
+    try {
+        // sanitize()
+        console.assert(sanitize('<script>') === '&lt;script&gt;', 'FAIL: sanitize XSS');
+        console.assert(sanitize(null) === '', 'FAIL: sanitize null');
+        console.assert(sanitize('') === '', 'FAIL: sanitize empty');
+        console.assert(sanitize('Hello') === 'Hello', 'FAIL: sanitize plain');
+        console.assert(sanitize('a"b') === 'a&quot;b', 'FAIL: sanitize quotes');
+        // isValidUrl()
+        console.assert(isValidUrl('https://google.com', ['google.com']) === true, 'FAIL: validUrl allow');
+        console.assert(isValidUrl('https://evil.com', ['google.com']) === false, 'FAIL: validUrl block');
+        console.assert(isValidUrl('javascript:alert(1)', ['google.com']) === false, 'FAIL: validUrl js');
+        console.assert(isValidUrl('not-a-url') === false, 'FAIL: validUrl invalid');
+        // formatChange()
+        console.assert(formatChange(5.3).cls === 'up', 'FAIL: formatChange up');
+        console.assert(formatChange(-2.1).cls === 'down', 'FAIL: formatChange down');
+        console.assert(formatChange(0).cls === 'neutral', 'FAIL: formatChange zero');
+        console.assert(formatChange(null).cls === 'neutral', 'FAIL: formatChange null');
+        console.assert(formatChange(undefined).cls === 'neutral', 'FAIL: formatChange undef');
+        // cacheGet/cacheSet()
+        cacheSet('_test', { a: 1 }, 5000);
+        const testCache = cacheGet('_test');
+        console.assert(testCache && testCache.a === 1, 'FAIL: cache roundtrip');
+        localStorage.removeItem('bigdashimi-cache-_test');
+        console.assert(cacheGet('_nonexistent') === null, 'FAIL: cache miss');
+        console.log('%c✅ Smoke-Tests passed', 'color:#00ff88;font-weight:bold');
+    } catch(e) { console.warn('⚠ Smoke-Test error:', e); }
+
+    initWeatherCanvas();
+    updateDynamicBackground();
+
+    // Version anzeigen
+    const vd = document.getElementById('version-display');
+    if (vd) vd.textContent = 'v' + VERSION;
+    const vs = document.getElementById('version-settings');
+    if (vs) vs.textContent = VERSION;
+
+    // Priorität 1: Sofort (lokal, kein API-Call)
+    updateClock();
+    updateStationCount();
+    updateWeatherCount();
+    updateCountdown();
+    updateMoon();
+    initNotes();
+
+    // Priorität 2: Nach 100ms (wichtige Live-Daten)
+    setTimeout(() => {
+        updateWeather();
+        updateDepartures();
+        updateStatus();
+    }, 100);
+
+    // Priorität 3: Nach 500ms (kann warten)
+    setTimeout(() => {
+        updateMarketPrices();
+        updateNews();
+        updateQuote();
+    }, 500);
+
+    // Priorität 4: Nach 1s (iframes, schwere Loads)
+    setTimeout(() => {
+        updateCalendar();
+        updateSpotify();
+        updateMap();
+    }, 1000);
+
+    // Intervalle
+    setInterval(updateClock, CONFIG.clockInterval);
+    setInterval(() => { updateWeather(); updateStatus(); }, CONFIG.weatherInterval);
+    setInterval(() => { updateDepartures(); updateStatus(); }, CONFIG.oevInterval);
+    setInterval(updateCountdown, 60000);
+    setInterval(updateNews, CONFIG.newsInterval);
+    setInterval(updateQuote, CONFIG.quoteInterval);
+    setInterval(updateMarketPrices, 10 * 60 * 1000);
+    setInterval(updateDynamicBackground, 5 * 60 * 1000);
+
+    // Tab-Visibility: Canvas pausieren wenn Tab nicht sichtbar
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (weatherCanvas.animId) {
+                cancelAnimationFrame(weatherCanvas.animId);
+                weatherCanvas.animId = null;
+            }
+            if (window._lightningInterval) {
+                clearInterval(window._lightningInterval);
+                window._lightningInterval = null;
+            }
+        } else {
+            if (weatherCanvas.particles && weatherCanvas.particles.length > 0 && !weatherCanvas.animId) {
+                animateWeatherParticles();
+            }
+            if (currentWeatherCode >= 95 && currentWeatherCode <= 99) {
+                window._lightningInterval = setInterval(() => {
+                    if (Math.random() < 0.4) triggerLightning();
+                }, 3000);
+            }
+            updateDynamicBackground();
+            updateClock();
+        }
+    });
+
+    // Demo-Regen nur wenn kein echtes Wetter, nicht geladen, und reduced-motion nicht aktiv
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion && (!currentWeatherCode || currentWeatherCode <= 3)) {
+        setTimeout(() => {
+            if (weatherLoaded) return; // Echtes Wetter hat bereits übernommen
+            spawnParticles('rain', 80);
+            animateWeatherParticles();
+            setTimeout(() => {
+                if (!weatherLoaded && currentWeatherCode <= 3) {
+                    cancelAnimationFrame(weatherCanvas.animId);
+                    weatherCanvas.animId = null;
+                    weatherCanvas.particles = [];
+                    weatherCanvas.ctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+                }
+            }, 3000);
+        }, 1500);
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Pizzeria Roma",
+    "address": "Musterstraße 1, 12345 Berlin",
+    "tables": [
+      { "time": "18:00", "available": true },
+      { "time": "20:00", "available": false }
+    ]
+  },
+  {
+    "name": "Sushi Bar",
+    "address": "Beispielweg 2, 12345 Berlin",
+    "tables": [
+      { "time": "18:00", "available": true },
+      { "time": "20:00", "available": true }
+    ]
+  }
+]

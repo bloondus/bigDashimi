@@ -1,0 +1,14 @@
+title: bigDashimi
+description: Dunkles Dashboard mit Uhrzeit, Wetter und ÖV-Abfahrten
+baseurl: "/bigDashimi"
+url: ""
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .gitignore
+  - README.md
